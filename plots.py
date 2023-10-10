@@ -5,7 +5,7 @@ import seaborn as sns
 import statsmodels.stats.api as sms
 
 
-def bound_plot(metric, regret_df, save=False):
+def bound_plot(metric, regret_df, regret_runs, save=False):
 
     sns.set(font_scale=1.3)
     plt.figure(figsize=(10, 6))
