@@ -1,5 +1,6 @@
 from dgp import *
 import pandas as pd
+import numpy as np
 
 
 def assert_ubs_coverage(data, ubs, eps=0.01):
@@ -263,3 +264,58 @@ def compare_bounds(data, dgp, tag, pg, u, metric, id_strategies, run=0):
         })
         
     return results
+
+def unobs_quadrant_bounds(data, dgp, id_strategy):
+    
+    A, D, Y = data['A'], data['D'], data['Y']
+    
+    if id_strategy == 'IV':
+        v10_down, v10_up = get_iv_bounds(data, dgp, a=1, true_class=1)
+        v00_down, v00_up = get_iv_bounds(data, dgp, a=0, true_class=1)
+        
+        w10_down, w10_up = get_iv_bounds(data, dgp, a=1, true_class=0)
+        w00_down, w00_up = get_iv_bounds(data, dgp, a=0, true_class=0) 
+        
+    elif id_strategy == 'Manski':
+        v10_down, v00_down = 0, 0
+        v10_up = ((A==1) & (D==0)).mean()
+        v00_up = ((A==0) & (D==0)).mean()
+        
+        w10_down, w00_down = 0, 0
+        w10_up = ((A==1) & (D==0)).mean()
+        w00_up = ((A==0) & (D==0)).mean()
+        
+    elif id_strategy == 'MSM':
+        lam = dgp['lambda']
+        
+        # Empirical estimates of identified terms
+        v11 = ((D==1) & (A==1) & (Y==1)).mean()
+        v01 = ((D==1) & (A==0) & (Y==1)).mean()
+        w11 = ((D==1) & (A==1) & (Y==0)).mean()
+        w01 = ((D==1) & (A==0) & (Y==0)).mean()
+        
+        rho10 = ((A==1) & (D==0)).mean()
+        rho11 = ((A==1) & (D==1)).mean()
+        
+        v10_down = (1/lam)*((v11*rho10)/(rho11))
+        v10_up = lam*((v11*rho10)/(rho11))
+        v00_down = (1/lam)*((v01*rho10)/(rho11))
+        v00_up = lam*((v01*rho10)/(rho11))
+        
+        w10_down = (1/lam)*((w11*rho10)/(rho11))
+        w10_up = lam*((w11*rho10)/(rho11))
+        w00_down = (1/lam)*((w01*rho10)/(rho11))
+        w00_up = lam*((w01*rho10)/(rho11))
+        
+        
+    return {
+        'v10_down': v10_down,
+        'v10_up': v10_up,
+        'v00_down': v00_down,
+        'v00_up': v00_up,
+        'w10_down': w10_down,
+        'w10_up': w10_up, 
+        'w00_down': w00_down, 
+        'w00_up': w00_up
+    }
+      

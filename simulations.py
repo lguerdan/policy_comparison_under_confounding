@@ -33,3 +33,60 @@ def run_sigmoid_dgp_simulation(dgp, u, metric, id_strategies, n_runs):
         results.extend(compare_bounds(data, dgp, 'Population', 1, u, metric, id_strategies, run))
     
     return pd.DataFrame.from_dict(results) 
+
+def pv_simulation(dgp, id_strategies, n_runs):
+    
+    results = []
+
+    for fn_cost in range(1,21):
+        u = np.array([[0,-fn_cost], [-1, 0]])
+        regret_runs = run_sigmoid_dgp_simulation(dgp, u, 'PV_cost', id_strategies, n_runs=n_runs)
+        regret_runs['cost_ratio'] = 1/fn_cost
+        if 'lambda' in dgp:
+            regret_runs['lambda'] = dgp['lambda']
+        results.append(regret_runs)
+
+    for fp_cost in range(1,21):
+        u = np.array([[0,-1], [-fp_cost, 0]])
+        regret_runs = run_sigmoid_dgp_simulation(dgp, u, 'PV_cost', id_strategies, n_runs=n_runs)
+        regret_runs['cost_ratio'] = fp_cost/1
+        if 'lambda' in dgp:
+            regret_runs['lambda'] = dgp['lambda']
+        results.append(regret_runs)
+        
+    return results
+
+def DAY_bernoulli_simulation(N, n_runs):
+    
+    interval = np.arange(0, 1,.05)[1:]
+    u = np.array([[0,0], [0, 0]])
+    metrics = ['FPR', 'TPR', 'TNR', 'FNR', 'ACCURACY']
+    
+    for pD in interval:
+        for pA in interval:
+            for pY in interval:
+
+                dgp = {
+                    'pD': pD,
+                    'pA': pA,
+                    'pY': pY,
+                    'N': N
+                }
+
+                data, vstats = bernoulli_3d(dgp)
+                ASR = ((data['A'] == 0) & (data['D'] == 0)).mean()
+                ASD = (data['D'] == 0).mean()
+
+                config = {
+                    'ASR': ASR,
+                    'ASD': ASD,
+                    'pD': pD,
+                    'pA': pA,
+                    'pY': pY
+                }
+
+                for metric in metrics:
+                    for run in range(n_runs):
+                        bounds = compare_bounds(data, dgp, 'Population', 1, u, metric, id_strategies, run)
+                        results.append({**vstats, **bounds[0], **config})
+    return results
