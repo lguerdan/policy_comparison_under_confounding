@@ -52,8 +52,8 @@ def bernoulli_3d(dgp):
         A = np.random.binomial(1, dgp['pA'], size=dgp['N'])
         Y = np.random.binomial(1, dgp['pY'], size=dgp['N'])
 
-        RMAG =  np.random.binomial(1, .9, size=dgp['N'])
-        DA_corr =  np.random.binomial(1, .5, size=dgp['N'])
+        RMAG =  np.random.binomial(1, .8, size=dgp['N'])
+        DA_corr =  np.random.binomial(1, .6, size=dgp['N'])
 
         A[(D == 0) & (DA_corr == 1)] = 0
         D[(A == 1) & (D == 0) & (Y == 1) & (RMAG == 1)] = 1 

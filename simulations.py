@@ -56,11 +56,11 @@ def pv_simulation(dgp, id_strategies, n_runs):
         
     return results
 
-def DAY_bernoulli_simulation(N, n_runs):
+def DAY_bernoulli_simulation(N, id_strategies, metrics, n_runs, lam=1):
     
     interval = np.arange(0, 1,.05)[1:]
     u = np.array([[0,0], [0, 0]])
-    metrics = ['FPR', 'TPR', 'TNR', 'FNR', 'ACCURACY']
+    results = []
     
     for pD in interval:
         for pA in interval:
@@ -70,7 +70,8 @@ def DAY_bernoulli_simulation(N, n_runs):
                     'pD': pD,
                     'pA': pA,
                     'pY': pY,
-                    'N': N
+                    'N': N,
+                    'lambda': lam if 'MSM' in id_strategies else 1
                 }
 
                 data, vstats = bernoulli_3d(dgp)

@@ -104,3 +104,59 @@ def bound_plot(metric, regret_df, regret_runs, save=False):
     
     if save:
         plt.savefig('bound_plot.pdf', dpi=500, bbox_inches='tight')
+
+
+def plot_regret_seperation(bdf):
+    
+    plt.figure()
+    bkeys = ['D_y0', 'D_y1', 'D_a0', 'D_u']
+    metrics = ['m_y=0', 'm_y=1', 'm_a=0', 'm_u']
+    metric_names = ['FPR', 'TPR', 'NPV', 'Accuracy']
+    xnames = ['$\overline{\Delta}(m_{y=0})$', '$\overline{\Delta}(m_{y=1})$',
+            '$\overline{\Delta}(m_{a=0})$', '$\overline{\Delta}(m_u)$']
+
+    n_plots = len(metrics)
+    n_bins = 9
+    fig, axs = plt.subplots(1, n_plots, figsize=(5*n_plots, 5), sharey=False)
+
+    for ix, bkey in enumerate(bkeys):
+
+        mdf = bdf[bdf['metric'] == metrics[ix]]
+        mdf[bkey] = ((mdf[bkey]*n_bins).round()/n_bins).copy()
+        mdf = mdf.groupby([bkey]).mean().reset_index()
+        mdf = mdf.sort_values(by=bkey, ascending=True)
+        
+        axs[ix].fill_between(mdf[bkey], mdf['Rs_down'],mdf['Rs_up'], color='#708090', alpha=.5, label='$R$')
+        axs[ix].fill_between(mdf[bkey], mdf['Rd_down'], mdf['Rd_up'], color='#F5DEB3', alpha=.5, label='$R_{\delta}$')
+
+        axs[ix].plot(mdf[bkey], mdf[f'R_oracle'], color='k', label='$R^*$')
+        axs[ix].set_title(metric_names[ix], fontsize=18)
+        axs[ix].set_xlabel(xnames[ix], fontsize=18)
+        axs[ix].axhline(color='grey', alpha=.2)
+
+    axs[0].set_ylabel('Regret', fontsize=18)
+    plt.legend(fontsize=15)
+    plt.savefig('figs/seperation.pdf', dpi=500, bbox_inches='tight')
+
+
+def plot_util_regret_seperation(bdf):
+    
+    plt.figure()
+    udf = bdf[(bdf['metric'] == 'm_u') & (bdf['u_01'] == 0) & (bdf['u_10'] == 0)]
+
+    udf['ur'] = udf['u_00'] / udf['u_11']
+    udf = udf.sort_values(by='D_u')
+    udf = udf.groupby('D_u').mean().reset_index()
+
+    plt.axhline(0, color='grey', zorder=1, linestyle='--')
+
+    plt.fill_between(udf['D_u'], udf['Rs_down'], udf['Rs_up'], color='#708090', alpha=.5, label='$R$')
+    plt.fill_between(udf['D_u'], udf['Rd_down'], udf['Rd_up'], color='#F5DEB3', alpha=.5, label='$R_{\delta}$')
+    plt.plot(udf['D_u'], udf['R_oracle'], color='k', label='$R^*$')
+    plt.xscale('log',base=10) 
+    plt.legend(loc='lower right', fontsize=12)
+
+
+    plt.xlabel(r'$\beta$', fontsize=14)
+    plt.ylabel('Regret', fontsize=14)
+    plt.savefig('figs/seperation_utility.pdf', dpi=500, bbox_inches='tight')
