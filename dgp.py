@@ -11,6 +11,14 @@ def f_a(X, wa):
 def f_mu(X, wm):
     return sigmoid(wm[0] + wm[1]*X[:,0] + wm[2]*X[:,1] + wm[3]*X[:,2] + wm[4]*X[:,3] + wm[5]*X[:,4])
 
+def e1(dgp, XU, Z):
+    norm = 1/(2*np.sqrt(XU.shape[1]))
+    return sigmoid(norm * (( dgp['e1_coeffs'] * XU).sum(axis=1) + dgp['beta_zd'] * Z))
+
+def mu(dgp, coeffs, XU, Z):
+    norm = 1/(2*np.sqrt(XU.shape[1]))
+    return sigmoid(norm * ((coeffs * XU).sum(axis=1) + dgp['beta_zy'] * Z))
+
 
 def sigmoid_dgp(dgp):
 

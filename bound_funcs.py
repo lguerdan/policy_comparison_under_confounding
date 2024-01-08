@@ -377,3 +377,29 @@ def unobs_quadrant_bounds(data, dgp, id_strategy):
         'w00_down': w00_down, 
         'w00_up': w00_up
     }
+
+    def check_bounds(data, Vpf_down, Vpf_up):
+        '''Given observational data (Y,D,T) ~ p() compute bounds across measures of interest.'''
+        
+        Y, D, T = data['Y'], data['D'], data['T']
+        v = np.zeros((2,2,2))
+
+        for y in range(2):
+            for d in range(2):
+                for t in range(2):
+                    v[y,t,d] = ((Y==y) & (D==d) & (T==t)).mean()
+        
+        metrics = ['m_y=1', 'm_y=0', 'm_a=0', 'm_a=1', 'm_u']
+        u = np.array([[1,0], [0, 1]])
+
+        for metric in metrics:
+            
+            R_oracle = oracle_regret(v, u, metric)
+            Rs_down, Rs_up = standard_bounds(v, Vpf_down, Vpf_up, u, metric)
+            Rd_down, Rd_up = delta_bounds(v, Vpf_down, Vpf_up, u, metric)
+
+            print(f'metric: {metric}')
+            print(f'Standard bounds [{Rs_down:.3}, {Rs_up:.3}]')
+            print(f'Delta bounds: [{Rd_down:.3}, {Rd_up:.3}]')
+            print(f'Oracle: {R_oracle:.4}')
+            print()

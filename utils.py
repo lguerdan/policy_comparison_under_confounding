@@ -1,31 +1,34 @@
 import numpy as np
 import pandas as pd
 
-
 def sigmoid(x):
     return 1/(1 + np.exp(-x))
 
-def get_v_stats(D, A, Y):
+def softmax(x):
+    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+    return e_x / np.sum(e_x, axis=1, keepdims=True)
+
+def generate_positive_semidefinite_matrix(dim, seed=None):
+    """
+    Generates a random positive semidefinite matrix.
     
-    v10_true = ((A==1) & (D==0) & (Y==1)).mean()
-    v00_true = ((A==0) & (D==0) & (Y==1)).mean()
-    w10_true = ((A==1) & (D==0) & (Y==0)).mean()
-    w00_true = ((A==0) & (D==0) & (Y==0)).mean()
+    Parameters:
+        dim (int): The dimension of the square matrix.
+        seed (int, optional): A seed for the random number generator to make results reproducible.
+        
+    Returns:
+        numpy.ndarray: A dim x dim positive semidefinite matrix.
+    """
+    if seed is not None:
+        np.random.seed(seed)
     
+    # Generate a random matrix A
+    A = np.random.randn(dim, dim)
     
-    v11 = ((D==1) & (A==1) & (Y==1)).mean()
-    v01 = ((D==1) & (A==0) & (Y==1)).mean()
+    # Multiply A by its transpose to get a symmetric and positive semidefinite matrix
+    matrix = np.dot(A, A.T)
     
-    w11 = ((D==1) & (A==1) & (Y==0)).mean()
-    w01 = ((D==1) & (A==0) & (Y==0)).mean()
+    # Adding a small value to the diagonal elements to ensure the matrix is positive definite
+    matrix += np.eye(dim) * 1e-8
     
-    return {
-        'v11': v11,
-        'v01': v01,
-        'w11': w11,
-        'w01': w01,
-        'v10_true': v10_true,
-        'v00_true': v00_true,
-        'w10_true': w10_true,
-        'w00_true': w00_true
-    }
+    return matrix
