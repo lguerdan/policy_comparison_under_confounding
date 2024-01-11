@@ -238,168 +238,28 @@ def oracle_regret(v, u, metric):
 
     return regret
 
+def check_bounds(data, Vpf_down, Vpf_up):
+    '''Given observational data (Y,D,T) ~ p() compute bounds across measures of interest.'''
 
-def get_iv_bounds(data, dgp, a, true_class=1):
-    
-    X, Z, A, D, Y = data['X'], data['Z'], data['A'], data['D'], data['Y']
-    nz, N = dgp['nz'], data['X'].shape[0]
-    if true_class==0:
-        Y = 1-Y
-    
-    mu_down_z = np.zeros((nz, N))
-    mu_up_z = np.zeros((nz, N))
+    Y, D, T = data['Y'], data['D'], data['T']
+    v = np.zeros((2,2,2))
 
-    # Compute upper and lower bounds on mu(a,x)
-    for z in range(nz):
-        e1_z = f_e1(X, dgp['wd'], z, dgp['beta'])
-        e0_z = 1-e1_z
-        
-        if true_class==1:
-            mu1 = f_mu(X, dgp['w_mu1'])
-        else:
-            mu1 = 1-f_mu(X, dgp['w_mu1'])
+    for y in range(2):
+        for d in range(2):
+            for t in range(2):
+                v[y,t,d] = ((Y==y) & (D==d) & (T==t)).mean()
 
-        mu_down_z[z] = e1_z*mu1
-        mu_up_z[z] = e0_z + e1_z*mu1
+    metrics = ['m_y=1', 'm_y=0', 'm_a=0', 'm_a=1', 'm_u']
+    u = np.array([[1,0], [0, 1]])
 
-    mu_down = mu_down_z.max(axis=0)
-    mu_up = mu_up_z.min(axis=0)
+    for metric in metrics:
 
-    z_down= np.zeros((nz, N))
-    z_up= np.zeros((nz, N))
+        R_oracle = oracle_regret(v, u, metric)
+        Rs_down, Rs_up = standard_bounds(v, Vpf_down, Vpf_up, u, metric)
+        Rd_down, Rd_up = delta_bounds(v, Vpf_down, Vpf_up, u, metric)
 
-    for z in range(nz):
-
-        e1_z = f_e1(X, dgp['wd'], z, dgp['beta'])
-        e0_z = 1-e1_z
-        if true_class==1:
-            mu1 = f_mu(X, dgp['w_mu1'])
-        else:
-            mu1 = 1-f_mu(X, dgp['w_mu1'])
-
-        lower = (mu_down - mu1*e1_z)/e0_z
-        upper = (mu_up - mu1*e1_z)/e0_z
-
-        marginal = ((Z==z) & (A==a) & (D==0)).mean()*(1/N)
-
-        z_down[z] = np.clip(lower, a_min=0, a_max=1)*marginal
-        z_up[z] = np.clip(upper, a_min=0, a_max=1)*marginal
-
-    # Compute overall bounds on unobserved cells
-    v_down = z_down.sum(axis=0).sum(axis=0)
-    v_up = z_up.sum(axis=0).sum(axis=0)
-    
-    return v_down, v_up
-
-def compare_bounds(data, dgp, tag, pg, u, metric, id_strategies, run=0):
-    
-    R_star = oracle_regret(data, u, metric=metric)
-    results = []
-    
-    for strategy in id_strategies: 
-        
-        TS_down, TS_up, ubs = two_step_bounds(data, dgp, u, metric=metric, id_strategy=strategy)
-        OS_down, OS_up, ubs = one_step_bounds(data, dgp, u, metric=metric, id_strategy=strategy)
-        
-        results.append({
-            'TS_down': TS_down,
-            'TS_up': TS_up,
-            'OS_down': OS_down,
-            'OS_up': OS_up,
-            'ID_type': strategy,
-            'SR': data['D'].mean(),
-            'pG': pg,
-            'tag': tag,
-            'R': R_star,
-            'run': run,
-            'metric': metric,
-            **ubs
-        })
-        
-    return results
-
-def unobs_quadrant_bounds(data, dgp, id_strategy):
-    
-    A, D, Y = data['A'], data['D'], data['Y']
-    
-    if id_strategy == 'IV':
-        v10_down, v10_up = get_iv_bounds(data, dgp, a=1, true_class=1)
-        v00_down, v00_up = get_iv_bounds(data, dgp, a=0, true_class=1)
-        
-        w10_down, w10_up = get_iv_bounds(data, dgp, a=1, true_class=0)
-        w00_down, w00_up = get_iv_bounds(data, dgp, a=0, true_class=0) 
-        
-    elif id_strategy == 'Manski':
-        v10_down, v00_down = 0, 0
-        v10_up = ((A==1) & (D==0)).mean()
-        v00_up = ((A==0) & (D==0)).mean()
-        
-        w10_down, w00_down = 0, 0
-        w10_up = ((A==1) & (D==0)).mean()
-        w00_up = ((A==0) & (D==0)).mean()
-        
-    elif id_strategy == 'MSM':
-
-        v10_down, v10_up = get_msm_bounds(data, dgp, a=1, true_class=1)
-        v00_down, v00_up = get_msm_bounds(data, dgp, a=0, true_class=1)
-
-        v10_down, v10_up = f_e1(X, dgp['wd'], 4, dgp['beta'])
-        v00_down, v00_up = f_e1(X, dgp['wd'], 4, dgp['beta'])
-
-        lam = dgp['lambda']
-        
-        # Empirical estimates of identified terms
-        v11 = ((D==1) & (A==1) & (Y==1)).mean()
-        v01 = ((D==1) & (A==0) & (Y==1)).mean()
-        w11 = ((D==1) & (A==1) & (Y==0)).mean()
-        w01 = ((D==1) & (A==0) & (Y==0)).mean()
-        
-        rho10 = ((A==1) & (D==0)).mean()
-        rho11 = ((A==1) & (D==1)).mean()
-        
-        v10_down = (1/lam)*((v11*rho10)/(rho11))
-        v10_up = lam*((v11*rho10)/(rho11))
-        v00_down = (1/lam)*((v01*rho10)/(rho11))
-        v00_up = lam*((v01*rho10)/(rho11))
-        
-        w10_down = (1/lam)*((w11*rho10)/(rho11))
-        w10_up = lam*((w11*rho10)/(rho11))
-        w00_down = (1/lam)*((w01*rho10)/(rho11))
-        w00_up = lam*((w01*rho10)/(rho11))
-        
-    return {
-        'v10_down': v10_down,
-        'v10_up': v10_up,
-        'v00_down': v00_down,
-        'v00_up': v00_up,
-        'w10_down': w10_down,
-        'w10_up': w10_up, 
-        'w00_down': w00_down, 
-        'w00_up': w00_up
-    }
-
-    def check_bounds(data, Vpf_down, Vpf_up):
-        '''Given observational data (Y,D,T) ~ p() compute bounds across measures of interest.'''
-        
-        Y, D, T = data['Y'], data['D'], data['T']
-        v = np.zeros((2,2,2))
-
-        for y in range(2):
-            for d in range(2):
-                for t in range(2):
-                    v[y,t,d] = ((Y==y) & (D==d) & (T==t)).mean()
-        
-        metrics = ['m_y=1', 'm_y=0', 'm_a=0', 'm_a=1', 'm_u']
-        u = np.array([[1,0], [0, 1]])
-
-        for metric in metrics:
-            
-            R_oracle = oracle_regret(v, u, metric)
-            Rs_down, Rs_up = standard_bounds(v, Vpf_down, Vpf_up, u, metric)
-            Rd_down, Rd_up = delta_bounds(v, Vpf_down, Vpf_up, u, metric)
-
-            print(f'metric: {metric}')
-            print(f'Standard bounds [{Rs_down:.3}, {Rs_up:.3}]')
-            print(f'Delta bounds: [{Rd_down:.3}, {Rd_up:.3}]')
-            print(f'Oracle: {R_oracle:.4}')
-            print()
+        print(f'metric: {metric}')
+        print(f'Standard bounds [{Rs_down:.3}, {Rs_up:.3}]')
+        print(f'Delta bounds: [{Rd_down:.3}, {Rd_up:.3}]')
+        print(f'Oracle: {R_oracle:.4}')
+        print()

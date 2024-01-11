@@ -2,78 +2,85 @@ import numpy as np
 import pandas as pd
 from utils import *
 
-def f_e1(X, wd, Z, beta):
-    return sigmoid(wd[0] + wd[1]*X[:,0] + wd[2]*X[:,1] + wd[3]*X[:,2] + wd[4]*X[:,3] + wd[5]*X[:,4]+ beta*Z)
 
 def f_a(X, wa):
     return sigmoid(wa[0] + wa[1]*X[:,0] + wa[2]*X[:,1] + wa[3]*X[:,2])
 
-def f_mu(X, wm):
-    return sigmoid(wm[0] + wm[1]*X[:,0] + wm[2]*X[:,1] + wm[3]*X[:,2] + wm[4]*X[:,3] + wm[5]*X[:,4])
-
-def e1(dgp, XU, Z):
+def e1(dgp, coeffs, XU, Z):
     norm = 1/(2*np.sqrt(XU.shape[1]))
-    return sigmoid(norm * (( dgp['e1_coeffs'] * XU).sum(axis=1) + dgp['beta_zd'] * Z))
+    return sigmoid(.18 * (( dgp['e1_coeffs'] * XU).sum(axis=1) + dgp['beta_zd'] * Z))
 
 def mu(dgp, coeffs, XU, Z):
     norm = 1/(2*np.sqrt(XU.shape[1]))
-    return sigmoid(norm * ((coeffs * XU).sum(axis=1) + dgp['beta_zy'] * Z))
+    return sigmoid(.18 * ((coeffs * XU).sum(axis=1) + dgp['beta_zy'] * Z))
 
 
-def sigmoid_dgp(dgp):
-
-    N = dgp['N']
-    Z = np.random.choice(dgp['nz'], N).astype(np.float64)
-    X = np.random.normal(0, 1, size=(N,5))
-
-    pD = f_e1(X, dgp['wd'], Z, dgp['beta'])
-    pA = f_a(X, dgp['wa'])
-    pY = f_mu(X, dgp['w_mu1'])*pD + f_mu(X, dgp['w_mu0'])*(1-pD)
-
-    D = np.random.binomial(1, pD, size=N)
-    A = np.random.binomial(1, pA, size=N)
-    Y = np.random.binomial(1, pY, size=N)
+def generate_data(dgp):
     
-    age = np.zeros_like(pD)
-    age[X[:,0]<0] = np.random.binomial(1, .1, size=N)[X[:,0]<0]
-    age[X[:,0]>=0] = np.random.binomial(1, .8, size=N)[X[:,0]>=0]
-
-    race = np.zeros_like(pD)
-    race[X[:,1]<-.2] = np.random.binomial(1, .7, size=N)[X[:,1] <- .2]
-    race[(X[:,1] >= -.2) & (X[:,1] < .2)] = np.random.binomial(1, .8, size=N)[(X[:,1] >= -.2) & (X[:,1] < .2)]
-    race[(X[:,1] >= .2)] = np.random.binomial(1, .9, size=N)[(X[:,1] >= .2)]
+    check_dgp_config(dgp)
     
+    # Co-variate information
+    N, Dx, Du = dgp['N'], dgp['Dx'], dgp['Du']
+    nD = Dx+Du
+    
+    # Proxy information
+    nz, nw, beta_zd, beta_zy = dgp['nz'], dgp['nw'], dgp['beta_zd'], dgp['beta_zy']
+    
+    e1_coeffs = dgp['e1_coeffs'].copy()
+    z_coeffs = dgp['z_coeffs'].copy()
+    mu1_coeffs = dgp['mu1_coeffs'].copy()
+    mu0_coeffs = dgp['mu0_coeffs'].copy()
+    
+    norm = 1/(2*np.sqrt(nD))
+    T = np.random.binomial(1,.35*np.ones(N))
+    
+    # Sample measured and unmeasured confounders
+    mean, cov = np.zeros(nD), np.eye(nD)
+    XU = np.random.multivariate_normal(mean, cov, N)
+
+    # Compute the probability distribution for Z
+    prob_Z = np.exp(z_coeffs*XU)
+    prob_Z = prob_Z / np.sum(prob_Z.sum(axis=1))  
+    weights = np.random.rand(nD, nz)
+    logits = np.dot(XU, weights)
+    pZ = softmax(logits)
+
+    # Sample instrument values
+    Z = np.argmax(np.array([np.random.multinomial(1, p) for p in pZ]), axis=1)
+
+    # Treatment propensity is a function of X, U and Z. Beta is a scaling factor.    
+    pD = e1(dgp, e1_coeffs, XU, Z)
+    D = np.random.binomial(1, pD)
+    p_mu_1 = mu(dgp, mu1_coeffs, XU, Z)
+
+    if dgp['id_assumption'] == 'MSM':
+        p_mu_0 = np.clip(dgp['lambda_star'] * p_mu_1, 0, 1)
+    else:
+        p_mu_0 = mu(dgp, dgp['mu0_coeffs'], XU, Z)
+    
+    p_mu = pD*p_mu_1 + (1-pD)*p_mu_0
+    Y = np.random.binomial(1, p_mu)
 
     return {
-        'X': X, 
-        'Z': Z, 
-        'D': D, 
-        'Y': Y, 
-        'A': A,
-        'age': age,
-        'race': race
+        'Y': Y,
+        'pY': p_mu,
+        'pD': pD,
+        'D': D,
+        'XU': XU,
+        'Z': Z,
+        'T': T
     }
 
-def bernoulli_3d(dgp):
 
-        D = np.random.binomial(1, dgp['pD'], size=dgp['N'])
-        A = np.random.binomial(1, dgp['pA'], size=dgp['N'])
-        Y = np.random.binomial(1, dgp['pY'], size=dgp['N'])
+def check_dgp_config(dgp):
+    
+    if dgp['id_assumption'] != 'IV':
+        assert dgp['beta_zd'] == 0, 'Error in configuration, beta_zd loading should be zero in non-iv setting'
+        assert dgp['beta_zy'] == 0, 'Error in configuration, beta_zy loading should be zero in non-iv setting'
+        
+    if dgp['id_assumption'] == 'IV':
+        assert dgp['z_coeffs'][Dx:].sum() == 0, 'Error in configuration, instrument is confounded'
+        
+    if dgp['id_assumption'] == 'MSM':
+        assert dgp['z_coeffs'].sum() == 0, 'Error in configuration, instrument available in MSM setting'
 
-        RMAG =  np.random.binomial(1, .8, size=dgp['N'])
-        DA_corr =  np.random.binomial(1, .6, size=dgp['N'])
-
-        A[(D == 0) & (DA_corr == 1)] = 0
-        D[(A == 1) & (D == 0) & (Y == 1) & (RMAG == 1)] = 1 
-        A[(A == 1) & (D == 0) & (Y == 1) & (RMAG == 1)] = 0
-
-
-        vstats = get_v_stats(D, A, Y)
-
-        data = { 
-            'D': D, 
-            'Y': Y, 
-            'A': A,
-        }
-
-        return data, vstats
