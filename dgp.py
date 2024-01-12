@@ -24,7 +24,7 @@ def generate_data(dgp):
     nD = Dx+Du
     
     # Proxy information
-    nz, nw, beta_zd, beta_zy = dgp['nz'], dgp['nw'], dgp['beta_zd'], dgp['beta_zy']
+    nz, beta_zd, beta_zy = dgp['nz'], dgp['beta_zd'], dgp['beta_zy']
     
     e1_coeffs = dgp['e1_coeffs'].copy()
     z_coeffs = dgp['z_coeffs'].copy()
@@ -58,18 +58,47 @@ def generate_data(dgp):
     else:
         p_mu_0 = mu(dgp, dgp['mu0_coeffs'], XU, Z)
     
+    # Oracle probabilities independent from sampled D
     p_mu = pD*p_mu_1 + (1-pD)*p_mu_0
-    Y = np.random.binomial(1, p_mu)
+
+    # Potential outcomes conditional on sampled D
+    p_y = np.zeros_like(p_mu)
+    p_y[D==1] = np.random.binomial(1, p_mu_1[D==1])
+    p_y[D==0] = np.random.binomial(1, p_mu_0[D==0])
+    Y = np.random.binomial(1, p_y)
 
     return {
         'Y': Y,
-        'pY': p_mu,
-        'pD': pD,
+        'p_mu_1': p_mu_1,
+        'p_mu': p_mu,
+        'p_e1': pD,
         'D': D,
         'XU': XU,
         'Z': Z,
         'T': T
     }
+
+def set_dgp_config(dgp, assumption):
+    # Measured and unmeasured covariate loadings
+
+    dgp = dgp.copy()
+
+    dgp['id_assumption'] = assumption
+
+    if assumption == 'MSM':
+        dgp['lambda_star'] = np.random.uniform(1, dgp['lambda'])
+        dgp['beta_zd'] = 0
+        dgp['beta_zy'] = 0
+        dgp['z_coeffs'] = np.zeros_like(dgp['z_coeffs'])
+        
+    if assumption == 'IV':
+        dgp['beta_zd'] = 2
+        dgp['beta_zy'] = 0
+        dgp['z_coeffs'][dgp['Dx']:] = 0 # IV Unconfoundedness
+
+    check_dgp_config(dgp)
+
+    return dgp
 
 
 def check_dgp_config(dgp):
@@ -79,7 +108,7 @@ def check_dgp_config(dgp):
         assert dgp['beta_zy'] == 0, 'Error in configuration, beta_zy loading should be zero in non-iv setting'
         
     if dgp['id_assumption'] == 'IV':
-        assert dgp['z_coeffs'][Dx:].sum() == 0, 'Error in configuration, instrument is confounded'
+        assert dgp['z_coeffs'][dgp['Dx']:].sum() == 0, 'Error in configuration, instrument is confounded'
         
     if dgp['id_assumption'] == 'MSM':
         assert dgp['z_coeffs'].sum() == 0, 'Error in configuration, instrument available in MSM setting'

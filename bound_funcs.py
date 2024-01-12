@@ -238,11 +238,20 @@ def oracle_regret(v, u, metric):
 
     return regret
 
-def check_bounds(data, Vpf_down, Vpf_up):
+def get_bounds(data, Vpf_down, Vpf_up, verbose=False):
     '''Given observational data (Y,D,T) ~ p() compute bounds across measures of interest.'''
 
     Y, D, T = data['Y'], data['D'], data['T']
     v = np.zeros((2,2,2))
+
+    bounds = {
+        'Rs_down': [],
+        'Rs_up': [],
+        'Rd_down': [],
+        'Rd_up': [],
+        'R_oracle': [],
+        'metric': []
+    }
 
     for y in range(2):
         for d in range(2):
@@ -258,8 +267,18 @@ def check_bounds(data, Vpf_down, Vpf_up):
         Rs_down, Rs_up = standard_bounds(v, Vpf_down, Vpf_up, u, metric)
         Rd_down, Rd_up = delta_bounds(v, Vpf_down, Vpf_up, u, metric)
 
-        print(f'metric: {metric}')
-        print(f'Standard bounds [{Rs_down:.3}, {Rs_up:.3}]')
-        print(f'Delta bounds: [{Rd_down:.3}, {Rd_up:.3}]')
-        print(f'Oracle: {R_oracle:.4}')
-        print()
+        bounds['Rs_down'].append(Rs_down)
+        bounds['Rs_up'].append(Rs_up)
+        bounds['Rd_down'].append(Rd_down)
+        bounds['Rd_up'].append(Rd_up)
+        bounds['R_oracle'].append(R_oracle)
+        bounds['metric'].append(metric)
+
+        if verbose == True:
+            print(f'metric: {metric}')
+            print(f'Standard bounds [{Rs_down:.3}, {Rs_up:.3}]')
+            print(f'Delta bounds: [{Rd_down:.3}, {Rd_up:.3}]')
+            print(f'Oracle: {R_oracle:.4}')
+            print()
+
+    return pd.DataFrame(bounds)

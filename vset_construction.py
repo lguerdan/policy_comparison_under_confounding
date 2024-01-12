@@ -1,6 +1,19 @@
 from dgp import *
 import numpy as np
 
+
+def get_vset(dgp, data, probs, id_method):
+
+    if id_method == 'NA':
+        return compute_na_bounds(dgp, data, probs)
+
+    elif id_method == 'IV': 
+        return compute_iv_bounds(dgp, data, probs)
+
+    elif id_method == 'MSM': 
+        return compute_msm_bounds(dgp, data, probs)
+
+
 def compute_msm_bounds(dgp, data, nuisance_probs):
     
     XU, Z, T = data['XU'], data['Z'], data['T']
@@ -24,7 +37,6 @@ def compute_msm_bounds(dgp, data, nuisance_probs):
     Vpf_up[0,0], Vpf_up[1,0] = v100_up, v100_up
 
     return Vpf_down, Vpf_up
-
 
 def compute_na_bounds(dgp, data, nuisance_probs):
     
