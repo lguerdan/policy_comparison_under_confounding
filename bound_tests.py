@@ -3,7 +3,7 @@ import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
 import matplotlib.pyplot as plt
 
-from bound_funcs import * 
+from bounds import * 
 from plots import *
 
 

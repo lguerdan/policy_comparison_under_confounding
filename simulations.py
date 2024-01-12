@@ -1,4 +1,4 @@
-from bound_funcs import * 
+from bounds import * 
 
 
 def run_sigmoid_dgp_simulation(dgp, u, metric, id_strategies, n_runs):
