@@ -86,3 +86,25 @@ def average_numeric_dataframes(dfs):
     avg_df = pd.concat([avg_numeric, non_numeric], axis=1)
 
     return avg_df
+
+def sample_arrays_common_indices(data_dict, S):
+    # Check if all arrays in the dictionary have the same length
+    N = None
+    for key, array in data_dict.items():
+        if N is None:
+            N = len(array)
+        elif len(array) != N:
+            raise ValueError(f"All arrays must be of the same length. Array '{key}' does not match.")
+
+    if S > N:
+        raise ValueError("S cannot be greater than the length of the arrays")
+
+    # Generate a common set of random indices
+    indices = np.random.choice(N, size=S, replace=False)
+
+    # Create a new dictionary with arrays sampled using these indices
+    sampled_dict = {}
+    for key, array in data_dict.items():
+        sampled_dict[key] = array[indices]
+
+    return sampled_dict

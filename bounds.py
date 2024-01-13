@@ -249,6 +249,8 @@ def get_bounds(data, Vpf_down, Vpf_up, verbose=False):
         'Rs_up': [],
         'Rd_down': [],
         'Rd_up': [],
+        'Rs_coverage': [],
+        'Rd_coverage': [],
         'R_oracle': [],
         'metric': []
     }
@@ -267,12 +269,17 @@ def get_bounds(data, Vpf_down, Vpf_up, verbose=False):
         Rs_down, Rs_up = standard_bounds(v, Vpf_down, Vpf_up, u, metric)
         Rd_down, Rd_up = delta_bounds(v, Vpf_down, Vpf_up, u, metric)
 
+        Rs_coverage = ((Rs_down <= R_oracle) &  (R_oracle <= Rs_up)).astype(int)
+        Rd_coverage = ((Rd_down <= R_oracle) &  (R_oracle <= Rd_up)).astype(int)
+
         bounds['Rs_down'].append(Rs_down)
         bounds['Rs_up'].append(Rs_up)
         bounds['Rd_down'].append(Rd_down)
         bounds['Rd_up'].append(Rd_up)
         bounds['R_oracle'].append(R_oracle)
         bounds['metric'].append(metric)
+        bounds['Rs_coverage'].append(Rs_coverage)
+        bounds['Rd_coverage'].append(Rd_coverage)
 
         if verbose == True:
             print(f'metric: {metric}')
