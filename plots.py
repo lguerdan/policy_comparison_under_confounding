@@ -78,7 +78,6 @@ def bound_plot(metric, regret_df, regret_runs, save=False):
 
         plt.plot([row['R'], row['R']], [ix-.28, ix+.33], color='k', linewidth=2, zorder=3)
 
-
     # Create a custom legend
     custom_legend = [
         plt.Line2D([0], [0], color='r', lw=0, label='Ours'),
@@ -160,3 +159,78 @@ def plot_util_regret_seperation(bdf):
     plt.xlabel(r'$\beta$', fontsize=14)
     plt.ylabel('Regret', fontsize=14)
     plt.savefig('figs/seperation_utility.pdf', dpi=500, bbox_inches='tight')
+
+
+def plot_exclusion_sensitivity(bedf):
+
+    metric_dict = {
+        'm_y=1': 'TPR',
+        'm_y=0': 'FPR',
+        'm_a=0': 'NPV',
+        'm_a=1': 'PPV',
+        'm_u': 'ACCURACY',
+    }
+
+    metrics = bedf['metric'].unique().tolist()
+
+    fig, axes = plt.subplots(1, 5, figsize=(25, 5)) # Adjust the figsize as needed
+
+    for i, metric in enumerate(metrics):
+        # Filter the DataFrame for the current metric
+        metric_df = bedf[bedf['metric'] == metric]
+        
+        # Reset the index to avoid the duplicate labels error
+        metric_df = metric_df.reset_index(drop=True)
+        
+        # Create each lineplot on the corresponding subplot axis
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='$R_d$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='$R_s$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_down', color='orange', linestyle='-')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_down', color='blue', linestyle='--')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='R_oracle', color='black', label='$R^*$')
+
+        # Set the titles, labels, etc.
+        axes[i].set_xlabel(r'Exclusion violation ($\beta_0$)', fontsize=16)
+        axes[i].set_title(f'{metric_dict[metric]}', fontsize=16)
+        axes[i].set_ylabel(f'', fontsize=16)
+        
+    axes[0].set_ylabel(f'Regret', fontsize=16)
+    axes[0].legend()
+
+
+def plot_relevance_sensitivity(brdf):
+
+    metric_dict = {
+        'm_y=1': 'TPR',
+        'm_y=0': 'FPR',
+        'm_a=0': 'NPV',
+        'm_a=1': 'PPV',
+        'm_u': 'ACCURACY',
+    }
+
+    metrics = brdf['metric'].unique().tolist()
+
+    fig, axes = plt.subplots(1, 5, figsize=(25, 5)) # Adjust the figsize as needed
+
+    for i, metric in enumerate(metrics):
+        
+        # Filter the DataFrame for the current metric
+        metric_df = brdf[brdf['metric'] == metric]
+        
+        # Reset the index to avoid the duplicate labels error
+        metric_df = metric_df.reset_index(drop=True)
+        
+        # Create each lineplot on the corresponding subplot axis
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='$R_d$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_down', color='orange', linestyle='-')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='$R_s$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_down', color='blue', linestyle='--')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='R_oracle', color='black', label='$R^*$')
+
+        # Set the titles, labels, etc.
+        axes[i].set_xlabel(r'Relevance violation ($\beta_1$)', fontsize=16)
+        axes[i].set_title(f'{metric_dict[metric]}', fontsize=16)
+        axes[i].set_ylabel(f'', fontsize=16)
+        
+    axes[0].set_ylabel(f'Regret', fontsize=16)
+    axes[0].legend()

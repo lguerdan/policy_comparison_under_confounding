@@ -47,7 +47,7 @@ def sample_split_crossfit(dgp, data, id_method, est_method, K):
 
 def oracle_nuisance_probs(dgp, data):
         
-    XU, D, Y, Z, p_mu1, p_e1, p_mu = data['XU'], data['D'], data['Y'], data['Y'], data['p_mu_1'], data['p_e1'], data['p_mu']
+    XU, D, Y, Z, p_mu1, p_e1, p_mu = data['XU'], data['D'], data['Y'], data['Z'], data['p_mu_1'], data['p_e1'], data['p_mu']
     Dx = dgp['Dx']
     
     # We don't have access to confounders when computing bounds.

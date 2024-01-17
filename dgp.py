@@ -86,7 +86,8 @@ def set_dgp_config(dgp, assumption):
     dgp['id_assumption'] = assumption
 
     if assumption == 'MSM':
-        dgp['lambda_star'] = np.random.uniform(1, dgp['lambda'])
+        if 'lambda_star' not in dgp:
+            dgp['lambda_star'] = np.random.uniform(1, dgp['lambda'])
         dgp['beta_zd'] = 0
         dgp['beta_zy'] = 0
         dgp['z_coeffs'] = np.zeros_like(dgp['z_coeffs'])

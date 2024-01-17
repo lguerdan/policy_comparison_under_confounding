@@ -2,14 +2,14 @@ import numpy as np
 import pandas as pd
 import statsmodels.stats.api as sms
 
-import utils, estimation, dgp
-
+import utils, estimation
+import dgp as datagen
 
 
 def estimation_coverage_experiment(msm_dgp, Ns, Nsims=30):
 
     Nsims = 30
-    superset = dgp.generate_data(msm_dgp)
+    superset = datagen.generate_data(msm_dgp)
     coverage_results = []
 
     for n in Ns:
@@ -72,3 +72,33 @@ def get_est_exp_metadata(coveragedf, Ns):
             N_results['metric'].append(metric)
             
     return pd.DataFrame(N_results)
+
+
+def relevance_sensitivity_experiment(dgp, beta_zd, n_sims, est_method='plugin', K=5):
+
+    relevance_bounds = []
+    for zd in beta_zd:
+        dgp['beta_zd'] = zd
+        
+        for sim in range(n_sims):
+            data = datagen.generate_data(dgp)
+            bounds = estimation.estimate_bounds(dgp, data, id_method='IV', est_method=est_method, K=K)
+            bounds['beta_zy'] = zd
+            relevance_bounds.append(bounds)
+
+    return pd.concat(relevance_bounds)
+
+
+def exclusion_sensitivity_experiment(dgp, beta_zy, n_sims, est_method='plugin', K=5):
+
+    exclusion_bounds = []
+    for zy in beta_zy:
+        dgp['beta_zy'] = zy
+        
+        for sim in range(n_sims):
+            data = datagen.generate_data(dgp)    
+            bounds = estimation.estimate_bounds(dgp, data, id_method='IV', est_method=est_method, K=K)
+            bounds['beta_zy'] = zy
+            exclusion_bounds.append(bounds)
+
+    return pd.concat(exclusion_bounds)
