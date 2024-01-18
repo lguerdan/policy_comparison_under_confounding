@@ -54,7 +54,7 @@ def generate_data(dgp):
     p_mu_1 = mu(dgp, mu1_coeffs, XU, Z)
 
     if dgp['id_assumption'] == 'MSM':
-        p_mu_0 = np.clip(dgp['lambda_star'] * p_mu_1, 0, 1)
+        p_mu_0 = dgp['lambda_star'] * p_mu_1
     else:
         p_mu_0 = mu(dgp, dgp['mu0_coeffs'], XU, Z)
     
