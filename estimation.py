@@ -76,7 +76,15 @@ def oracle_nuisance_probs(dgp, data):
 def plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data):
             
     # Train model via data from held-out folds
-    XU, D, Y, Z, p_mu1, p_e1 = out_data['XU'], out_data['D'], out_data['Y'], out_data['Z'], out_data['p_mu_1'], out_data['p_e1']
+    XU, D, Y, Z = out_data['XU'], out_data['D'], out_data['Y'], out_data['Z']
+
+    if 'p_mu_1' in out_data:
+        synthetic=True
+        p_mu1, p_e1 = out_data['p_mu_1'], out_data['p_e1']
+        p_mu1_k, p_e1_k = in_data['p_mu_1'], in_data['p_e1']
+
+    else: 
+        synthetic=False
     
     # We don't have access to confounders when computing bounds.
     mask = np.ones(XU.shape[1])
@@ -91,7 +99,7 @@ def plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data):
     e1_hat.fit(XZ, D)
     
     # Regress models on data from fold k
-    XU_k, D_k, Y_k, Z_k, p_mu1_k, p_e1_k = in_data['XU'], in_data['D'], in_data['Y'], in_data['Z'], in_data['p_mu_1'], in_data['p_e1']
+    XU_k, D_k, Y_k, Z_k = in_data['XU'], in_data['D'], in_data['Y'], in_data['Z']
     
     # We don't have access to confounders when computing bounds.
     mask = np.ones(XU_k.shape[1])
@@ -112,8 +120,9 @@ def plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data):
     p_mu1_hat = mu_hat.predict_proba(XZ_k)[:,1]
     p_e1_hat = e1_hat.predict_proba(XZ_k)[:,1]
     
-    print('outcome regression error:', (np.abs(p_mu1_hat - p_mu1_k)).mean())
-    print('propensitiy error:', (np.abs(p_e1_hat - p_e1_k)).mean())
+    if synthetic:
+        print('outcome regression error:', (np.abs(p_mu1_hat - p_mu1_k)).mean())
+        print('propensitiy error:', (np.abs(p_e1_hat - p_e1_k)).mean())
 
     return {
         'p_mu1': p_mu1_hat,

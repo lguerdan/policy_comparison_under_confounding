@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import statsmodels.stats.api as sms
-
+import utils
 
 def bound_plot(metric, regret_df, regret_runs, save=False):
 
@@ -234,3 +234,48 @@ def plot_relevance_sensitivity(brdf):
         
     axes[0].set_ylabel(f'Regret', fontsize=16)
     axes[0].legend()
+
+def plot_design_sensitivity(brdf):
+
+    metric_dict = {
+        'm_y=1': 'TPR',
+        'm_y=0': 'FPR',
+        'm_a=0': 'NPV',
+        'm_a=1': 'PPV',
+        'm_u': 'ACCURACY',
+    }
+
+    fig, axes = plt.subplots(1, 5, figsize=(25, 5)) # Adjust the figsize as needed
+    metrics = brdf['metric'].unique().tolist()
+
+    for i, metric in enumerate(metrics):
+
+        # Filter the DataFrame for the current metric
+        mdf = brdf[brdf['metric'] == metric]
+
+        # Reset the index to avoid the duplicate labels error
+        mdf = mdf.reset_index(drop=True)
+
+        mdf['Rs_includes_zero'] = ((mdf['Rs_down'] <= 0) & (mdf['Rs_up'] >= 0)).astype(int)
+        mdf['Rd_includes_zero'] = ((mdf['Rd_down'] <= 0) & (mdf['Rd_up'] >= 0)).astype(int)
+        TS_lambda_star = mdf[mdf['Rs_includes_zero'] == 1]['lambda'].min()
+        OS_lambda_star = mdf[mdf['Rd_includes_zero'] == 1]['lambda'].min()
+
+        axes[i].fill_between(mdf['lambda'], mdf['Rs_down'], mdf['Rs_up'], label='$R$', color='#708090', alpha=.5, )
+        axes[i].fill_between(mdf['lambda'], mdf['Rd_down'], mdf['Rd_up'], label='$R_{\delta}$', color='#F5DEB3', alpha=.5,)
+
+        regret_intercept = mdf['Rs_down'].tolist()[0]
+        axes[i].axvline(TS_lambda_star, color='grey', zorder=1, linestyle='--')
+        axes[i].axvline(OS_lambda_star, color='grey', zorder=1, linestyle='--')
+
+        axes[i].axhline(0, color='grey', zorder=1, linestyle='--')
+
+        mval = mdf[['Rs_down', 'Rd_down']].min().min()
+        axes[i].text(TS_lambda_star+.05, mval, '$\Lambda^*_{R}$', fontsize=14)
+        axes[i].text(OS_lambda_star-.2, mval-.005, '$\Lambda^*_{R_\delta}$', fontsize=14)
+
+        axes[i].set_title(f'{utils.metric_dict[metric]}', fontsize=16)
+        axes[i].set_xlabel('$\Lambda$', fontsize=16)
+
+    axes[-1].legend(loc='upper right', fontsize=16)    
+    axes[0].set_ylabel('Regret', fontsize=16)

@@ -1,6 +1,14 @@
 import numpy as np
 import pandas as pd
 
+metric_dict = {
+    'm_y=1': 'TPR',
+    'm_y=0': 'FPR',
+    'm_a=0': 'NPV',
+    'm_a=1': 'PPV',
+    'm_u': 'ACCURACY',
+}
+
 def sigmoid(x):
     return 1/(1 + np.exp(-x))
 

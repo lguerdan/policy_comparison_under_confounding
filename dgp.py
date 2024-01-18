@@ -54,7 +54,7 @@ def generate_data(dgp):
     p_mu_1 = mu(dgp, mu1_coeffs, XU, Z)
 
     if dgp['id_assumption'] == 'MSM':
-        p_mu_0 = dgp['lambda_star'] * p_mu_1
+        p_mu_0 = np.clip(dgp['lambda_star'] * p_mu_1, 0, 1)
     else:
         p_mu_0 = mu(dgp, dgp['mu0_coeffs'], XU, Z)
     
@@ -63,8 +63,8 @@ def generate_data(dgp):
 
     # Potential outcomes conditional on sampled D
     p_y = np.zeros_like(p_mu)
-    p_y[D==1] = np.random.binomial(1, p_mu_1[D==1])
-    p_y[D==0] = np.random.binomial(1, p_mu_0[D==0])
+    p_y[D==1] = p_mu_1[D==1]
+    p_y[D==0] = p_mu_0[D==0]
     Y = np.random.binomial(1, p_y)
 
     return {

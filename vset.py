@@ -16,12 +16,13 @@ def get_vset(dgp, data, probs, id_method):
 
 def compute_msm_bounds(dgp, data, nuisance_probs):
     
-    XU, Z, T = data['XU'], data['Z'], data['T']
+    XU, T = data['XU'], data['T']
 
     p_mu1 = nuisance_probs['p_mu1']
     p_e1 = nuisance_probs['p_e1']
 
-    mu_down, mu_up = (1/dgp['lambda']) * p_mu1, dgp['lambda'] * p_mu1
+    mu_down = np.clip((1/dgp['lambda']) * p_mu1, 0, 1)
+    mu_up = np.clip(dgp['lambda'] * p_mu1, 0, 1)
     p_e0 = 1-p_e1
     
     v110_up = (T * mu_up * p_e0).mean()

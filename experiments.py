@@ -102,3 +102,17 @@ def exclusion_sensitivity_experiment(dgp, beta_zy, n_sims, est_method='plugin', 
             exclusion_bounds.append(bounds)
 
     return pd.concat(exclusion_bounds)
+
+def design_sensitivity_exp(dgp, data, lambdas, n_sims=10):
+
+    lambda_bounds = []
+
+    for lam in lambdas:
+        for sim in range(n_sims):
+
+            dgp['lambda'] = lam
+            bounds = estimation.estimate_bounds(dgp, data, id_method='MSM', est_method='plugin', K=5)
+            bounds['lambda'] = lam
+            lambda_bounds.append(bounds)
+
+    return pd.concat(lambda_bounds)
