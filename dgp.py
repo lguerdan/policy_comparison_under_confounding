@@ -8,11 +8,11 @@ def f_a(X, wa):
 
 def e1(dgp, coeffs, XU, Z):
     norm = 1/(2*np.sqrt(XU.shape[1]))
-    return sigmoid((( dgp['e1_coeffs'] * XU).sum(axis=1) + dgp['beta_zd'] * Z))
+    return sigmoid(.18 * (( dgp['e1_coeffs'] * XU).sum(axis=1) + dgp['beta_zd'] * Z))
 
 def mu(dgp, coeffs, XU, Z):
     norm = 1/(2*np.sqrt(XU.shape[1]))
-    return sigmoid(((coeffs * XU).sum(axis=1) - dgp['beta_zy'] * Z))
+    return sigmoid(.18 * ((coeffs * XU).sum(axis=1) - dgp['beta_zy'] * Z))
 
 
 def generate_data(dgp):
