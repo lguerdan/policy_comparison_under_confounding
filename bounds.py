@@ -183,7 +183,9 @@ def standard_bounds(v, Vpf_down, Vpf_up, u, metric):
     if metric=='m_y=1' or metric=='m_y=0':
 
         y = 1 if metric=='m_y=1' else 0
-        assert v[y,:,:].sum() > 0, 'Zero base rate denominator'
+
+        if v[y,:,:].sum() == 0:
+            v[y,:,:] = .0001
 
         R_up = (Vpf_up[y,1] + v[y,1,1])/ (Vpf_down[y,0] + v[y,0,1] + Vpf_up[y,1] + v[y,1,1]) \
             - (v[y,0,1] + v[y,1,1]) / (Vpf_up[y,0]  + v[y,0,1] + Vpf_up[y,1] + v[y,1,1])
@@ -215,11 +217,12 @@ def standard_bounds(v, Vpf_down, Vpf_up, u, metric):
 
 def oracle_regret(v, u, metric):
     # This function assumes knowledge of[y,t,0]
-
     v = v.copy()
 
     if metric=='m_y=1' or metric=='m_y=0':
         y = 1 if metric=='m_y=1' else 0
+        if v[y,:,:].sum() == 0:
+            v[y,:,:] = .0001
         regret = (v[y,1,0] - v[y,0,1]) / (v[y,0,0] + v[y,1,0] + v[y,0,1] + v[y,1,1])
 
     if metric=='m_u':
@@ -238,7 +241,7 @@ def oracle_regret(v, u, metric):
 
     return regret
 
-def get_bounds(data, Vpf_down, Vpf_up, verbose=False):
+def get_bounds(data, Vpf_down, Vpf_up, u=False, verbose=False):
     '''Given observational data (Y,D,T) ~ p() compute bounds across measures of interest.'''
 
     Y, D, T = data['Y'], data['D'], data['T']
@@ -255,13 +258,15 @@ def get_bounds(data, Vpf_down, Vpf_up, verbose=False):
         'metric': []
     }
 
+    if type(u) != np.ndarray:
+        u = np.array([[1,0], [0, 1]])
+
     for y in range(2):
         for d in range(2):
             for t in range(2):
                 v[y,t,d] = ((Y==y) & (D==d) & (T==t)).mean()
 
     metrics = ['m_y=1', 'm_y=0', 'm_a=0', 'm_a=1', 'm_u']
-    u = np.array([[1,0], [0, 1]])
 
     for metric in metrics:
 
@@ -289,3 +294,5 @@ def get_bounds(data, Vpf_down, Vpf_up, verbose=False):
             print()
 
     return pd.DataFrame(bounds)
+
+    

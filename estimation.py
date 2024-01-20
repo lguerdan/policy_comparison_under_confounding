@@ -2,19 +2,21 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.preprocessing import StandardScaler
 
 import utils
 import vset
 import bounds
 import dgp as dgp_funcs
 
-def estimate_bounds(dgp, data, id_method, est_method, K=5):
+def estimate_bounds(dgp, data, id_method, est_method, u=False, K=5):
     '''This function will call the appropriate nuisance estimation function and identification approach'''
     
     if est_method == 'oracle':        
         probs = oracle_nuisance_probs(dgp, data)
         Vpf_down, Vpf_up = vset.get_vset(dgp, data, probs, id_method)
-        bdf = bounds.get_bounds(data, Vpf_down, Vpf_up, verbose=False)
+        bdf = bounds.get_bounds(data, Vpf_down, Vpf_up, u, verbose=False)
 
     if est_method == 'plugin':
         bdf = sample_split_crossfit(dgp, data, id_method, est_method, K)
@@ -24,7 +26,7 @@ def estimate_bounds(dgp, data, id_method, est_method, K=5):
     
     return bdf
     
-def sample_split_crossfit(dgp, data, id_method, est_method, K):
+def sample_split_crossfit(dgp, data, id_method, est_method, K, u=False):
     
     in_folds, out_folds = utils.k_fold_split_and_complement(data, K)
 
@@ -41,7 +43,7 @@ def sample_split_crossfit(dgp, data, id_method, est_method, K):
         # Learn models, then run inference via data from fold k
         in_probs = plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data)
         Vpf_down, Vpf_up = vset.get_vset(in_dgp, in_data, in_probs, id_method)
-        fold_bdfs.append(bounds.get_bounds(data, Vpf_down, Vpf_up, verbose=False)) 
+        fold_bdfs.append(bounds.get_bounds(data, Vpf_down, Vpf_up, u, verbose=False)) 
 
     return utils.average_numeric_dataframes(fold_bdfs)
 
@@ -88,7 +90,8 @@ def plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data):
     
     # We don't have access to confounders when computing bounds.
     mask = np.ones(XU.shape[1])
-    mask[out_dgp['Dx']:] = 0
+    if 'Dx' in out_dgp:
+        mask[out_dgp['Dx']:] = 0
     X = XU[:,mask==1].copy()
     XZ = np.concatenate((X, Z.reshape(-1,1)), axis=1)
 
@@ -103,7 +106,8 @@ def plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data):
     
     # We don't have access to confounders when computing bounds.
     mask = np.ones(XU_k.shape[1])
-    mask[in_dgp['Dx']:] = 0
+    if 'Dx' in in_dgp:
+        mask[in_dgp['Dx']:] = 0
     X_k = XU_k[:,mask==1].copy()
     XZ_k = np.concatenate((X_k, Z_k.reshape(-1,1)), axis=1)
 

@@ -79,10 +79,8 @@ def generate_data(dgp):
     }
 
 def set_dgp_config(dgp, assumption):
-    # Measured and unmeasured covariate loadings
 
     dgp = dgp.copy()
-
     dgp['id_assumption'] = assumption
 
     if assumption == 'MSM':

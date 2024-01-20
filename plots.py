@@ -279,3 +279,20 @@ def plot_design_sensitivity(brdf):
 
     axes[-1].legend(loc='upper right', fontsize=16)    
     axes[0].set_ylabel('Regret', fontsize=16)
+
+
+def plot_cost_ratio_curve(dgp, crdf):
+
+    crdf = crdf.sort_values(by='cr')
+    crdf = crdf.groupby('cr').mean().reset_index()
+
+    plt.axhline(0, color='grey', zorder=1, linestyle='--')
+    plt.fill_between(crdf['cr'], crdf['Rs_down'],crdf['Rs_up'], alpha=.5, label='$R$', color='#708090')
+    plt.fill_between(crdf['cr'], crdf['Rd_down'],crdf['Rd_up'], alpha=.5, label='$R_{\delta}$', color='#F5DEB3')
+    plt.xscale('log',base=10) 
+    plt.legend(loc='upper right')
+
+    plt.xlabel('$\delta$', fontsize=18)
+    plt.ylabel('Policy Cost Regret', fontsize=16)
+    plt.title(f"Policy Cost Regret Interval ($\Lambda={dgp['lambda']}$)")
+

@@ -116,3 +116,15 @@ def sample_arrays_common_indices(data_dict, S):
         sampled_dict[key] = array[indices]
 
     return sampled_dict
+
+def mask_dictionary_arrays(original_dict, mask):
+    subset_dict = {}
+    # Apply the mask to each array in the dictionary
+    for key, array in original_dict.items():
+        if '_z' in key:
+            subset_dict[key] = array[:, mask.astype(bool)]
+            
+        else:
+            subset_dict[key] = array[mask.astype(bool)]
+
+    return subset_dict
