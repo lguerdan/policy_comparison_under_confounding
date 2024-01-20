@@ -292,7 +292,7 @@ def plot_cost_ratio_curve(dgp, crdf):
     plt.xscale('log',base=10) 
     plt.legend(loc='upper right')
 
-    plt.xlabel('$\delta$', fontsize=18)
-    plt.ylabel('Policy Cost Regret', fontsize=16)
-    plt.title(f"Policy Cost Regret Interval ($\Lambda={dgp['lambda']}$)")
+    plt.xlabel('$\delta$', fontsize=14)
+    plt.ylabel('Policy Cost Regret', fontsize=12)
+    plt.savefig('figs/cost_regret.pdf', dpi=500)
 
