@@ -183,19 +183,22 @@ def plot_exclusion_sensitivity(bedf):
         metric_df = metric_df.reset_index(drop=True)
         
         # Create each lineplot on the corresponding subplot axis
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='$R_d$')
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='$R_s$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='R')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='$R_{\delta}$')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_down', color='orange', linestyle='-')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_down', color='blue', linestyle='--')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='R_oracle', color='black', label='$R^*$')
 
         # Set the titles, labels, etc.
-        axes[i].set_xlabel(r'Exclusion violation ($\beta_0$)', fontsize=16)
+        axes[i].set_xlabel(r'Exclusion violation ($\beta_1$)', fontsize=16)
         axes[i].set_title(f'{metric_dict[metric]}', fontsize=16)
         axes[i].set_ylabel(f'', fontsize=16)
+        axes[i].legend().set_visible(False)
         
     axes[0].set_ylabel(f'Regret', fontsize=16)
-    axes[0].legend()
+    axes[0].legend(fontsize=16)
+
+    plt.savefig('figs/exclusion_iv.pdf', dpi=500, bbox_inches='tight')
 
 
 def plot_relevance_sensitivity(brdf):
@@ -221,34 +224,34 @@ def plot_relevance_sensitivity(brdf):
         metric_df = metric_df.reset_index(drop=True)
         
         # Create each lineplot on the corresponding subplot axis
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='$R_d$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='$R$')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_down', color='orange', linestyle='-')
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='$R_s$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='$R_{\delta}$')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_down', color='blue', linestyle='--')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='R_oracle', color='black', label='$R^*$')
 
         # Set the titles, labels, etc.
-        axes[i].set_xlabel(r'Relevance violation ($\beta_1$)', fontsize=16)
+        axes[i].set_xlabel(r'IV relevance ($\beta_0$)', fontsize=16)
         axes[i].set_title(f'{metric_dict[metric]}', fontsize=16)
         axes[i].set_ylabel(f'', fontsize=16)
+        axes[i].legend().set_visible(False)
         
     axes[0].set_ylabel(f'Regret', fontsize=16)
-    axes[0].legend()
+    axes[0].legend(fontsize=16)
+    plt.savefig('figs/relevance_iv.pdf', dpi=500, bbox_inches='tight')
 
 def plot_design_sensitivity(brdf):
 
     metric_dict = {
         'm_y=1': 'TPR',
-        'm_y=0': 'FPR',
-        'm_a=0': 'NPV',
-        'm_a=1': 'PPV',
-        'm_u': 'ACCURACY',
+        'm_y=0': 'FPR'
     }
+    nplots = len(metric_dict.keys())
 
-    fig, axes = plt.subplots(1, 5, figsize=(25, 5)) # Adjust the figsize as needed
+    fig, axes = plt.subplots(1, nplots, figsize=(5*nplots, 5)) # Adjust the figsize as needed
     metrics = brdf['metric'].unique().tolist()
 
-    for i, metric in enumerate(metrics):
+    for i, metric in enumerate(metric_dict.keys()):
 
         # Filter the DataFrame for the current metric
         mdf = brdf[brdf['metric'] == metric]
@@ -265,20 +268,22 @@ def plot_design_sensitivity(brdf):
         axes[i].fill_between(mdf['lambda'], mdf['Rd_down'], mdf['Rd_up'], label='$R_{\delta}$', color='#F5DEB3', alpha=.5,)
 
         regret_intercept = mdf['Rs_down'].tolist()[0]
-        axes[i].axvline(TS_lambda_star, color='grey', zorder=1, linestyle='--')
-        axes[i].axvline(OS_lambda_star, color='grey', zorder=1, linestyle='--')
+        axes[i].axvline(TS_lambda_star, color='#708090', zorder=1, linestyle='--')
+        axes[i].axvline(OS_lambda_star, color='#708090', zorder=1, linestyle='--')
 
         axes[i].axhline(0, color='grey', zorder=1, linestyle='--')
 
         mval = mdf[['Rs_down', 'Rd_down']].min().min()
-        axes[i].text(TS_lambda_star+.05, mval, '$\Lambda^*_{R}$', fontsize=14)
-        axes[i].text(OS_lambda_star-.2, mval-.005, '$\Lambda^*_{R_\delta}$', fontsize=14)
+        axes[i].text(TS_lambda_star+.05, mval, '$\Lambda^{0}_{R}$', fontsize=18, color='black')
+        axes[i].text(OS_lambda_star+.05, mval-.005, '$\Lambda^{0}_{R_\delta}$', fontsize=18, color='black')
 
         axes[i].set_title(f'{utils.metric_dict[metric]}', fontsize=16)
         axes[i].set_xlabel('$\Lambda$', fontsize=16)
 
     axes[-1].legend(loc='upper right', fontsize=16)    
     axes[0].set_ylabel('Regret', fontsize=16)
+
+    plt.savefig('figs/design_sensitivity.pdf', dpi=500, bbox_inches='tight')
 
 
 def plot_cost_ratio_curve(dgp, crdf):

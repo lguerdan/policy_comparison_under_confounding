@@ -8,11 +8,16 @@ def f_a(X, wa):
 
 def e1(dgp, coeffs, XU, Z):
     norm = 1/(2*np.sqrt(XU.shape[1]))
-    return sigmoid(.18 * (( dgp['e1_coeffs'] * XU).sum(axis=1) + dgp['beta_zd'] * Z))
+    return sigmoid(norm * (( dgp['e1_coeffs'] * XU).sum(axis=1) + dgp['beta_zd'] * Z))
 
 def mu(dgp, coeffs, XU, Z):
     norm = 1/(2*np.sqrt(XU.shape[1]))
-    return sigmoid(.18 * ((coeffs * XU).sum(axis=1) - dgp['beta_zy'] * Z))
+    return sigmoid(norm * ((coeffs * XU).sum(axis=1) + dgp['beta_zy'] * Z))
+
+def pi(dgp, coeffs, XU):
+    dx = dgp['Dx']
+    coeffs[dx:] = 0
+    return sigmoid(((coeffs * XU).sum(axis=1)))
 
 
 def generate_data(dgp):
@@ -30,13 +35,21 @@ def generate_data(dgp):
     z_coeffs = dgp['z_coeffs'].copy()
     mu1_coeffs = dgp['mu1_coeffs'].copy()
     mu0_coeffs = dgp['mu0_coeffs'].copy()
+    t_coeffs = dgp['t_coeffs'].copy()
     
     norm = 1/(2*np.sqrt(nD))
-    T = np.random.binomial(1,.35*np.ones(N))
     
     # Sample measured and unmeasured confounders
     mean, cov = np.zeros(nD), np.eye(nD)
     XU = np.random.multivariate_normal(mean, cov, N)
+
+    # Sample actions from the updated policy
+    if 'uniform_pi' in dgp and dgp['uniform_pi'] == True:
+        T = np.random.binomial(1,.35*np.ones(N))
+    
+    else:
+        pT = pi(dgp, t_coeffs, XU)
+        T = np.random.binomial(1, pT)
 
     # Compute the probability distribution for Z
     prob_Z = np.exp(z_coeffs*XU)
