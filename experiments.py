@@ -123,6 +123,8 @@ def cost_ratio_sweep_exp(dgp, data, lam):
     dgp['lambda'] = lam
     regret_runs = []
 
+    print(dgp)
+
     for fn_cost in range(1,25):
         u = np.array([[0,-fn_cost], [-1, 0]])
         result = estimation.sample_split_crossfit(dgp, data, id_method='MSM', est_method='plugin', K=5, u=u)

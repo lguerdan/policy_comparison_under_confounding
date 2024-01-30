@@ -40,7 +40,7 @@ def sample_split_crossfit(dgp, data, id_method, est_method, K, u=False):
         in_dgp['N'] = in_data['XU'].shape[0]
         out_dgp['N'] = out_data['XU'].shape[0]
 
-        # Learn models, then run inference via data from fold k
+        # Learn models, then run inference on data from fold k
         in_probs = plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data)
         Vpf_down, Vpf_up = vset.get_vset(in_dgp, in_data, in_probs, id_method)
         fold_bdfs.append(bounds.get_bounds(data, Vpf_down, Vpf_up, u, verbose=False)) 
@@ -55,6 +55,7 @@ def oracle_nuisance_probs(dgp, data):
     # We don't have access to confounders when computing bounds.
     mu1_coeffs = dgp['mu1_coeffs'].copy()
     e1_coeffs = dgp['e1_coeffs'].copy()
+    t_coeffs = dgp['t_coeffs'].copy()
     mu1_coeffs[Dx:] = 0
     e1_coeffs[Dx:] = 0
     
@@ -63,12 +64,14 @@ def oracle_nuisance_probs(dgp, data):
 
     p_mu1 = dgp_funcs.mu(dgp, mu1_coeffs, XU, Z)
     p_e1 = dgp_funcs.e1(dgp, e1_coeffs, XU, Z)
+    p_pi = dgp_funcs.pi(dgp, t_coeffs, XU)
 
     for z in range(dgp['nz']):
         p_mu1_z[z] = dgp_funcs.mu(dgp, mu1_coeffs, XU, z)
         p_e1_z[z] = dgp_funcs.e1(dgp, e1_coeffs, XU, z)
 
     return {
+        'p_pi': p_pi,
         'p_mu1': p_mu1,
         'p_e1': p_e1,
         'p_mu1_z': p_mu1_z,
@@ -85,8 +88,14 @@ def plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data):
         p_mu1, p_e1 = out_data['p_mu_1'], out_data['p_e1']
         p_mu1_k, p_e1_k = in_data['p_mu_1'], in_data['p_e1']
 
+        # We know oracle probabilities of the new policy
+        t_coeffs = in_dgp['t_coeffs'].copy()
+        p_pi = dgp_funcs.pi(in_dgp, t_coeffs, XU)
+
     else: 
         synthetic=False
+        # The oracle probabilities are just a deterministic function of T
+        p_pi = in_data['T']
     
     # We don't have access to confounders when computing bounds.
     mask = np.ones(XU.shape[1])
@@ -95,8 +104,16 @@ def plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data):
     X = XU[:,mask==1].copy()
     XZ = np.concatenate((X, Z.reshape(-1,1)), axis=1)
 
-    mu_hat = LogisticRegression()
-    e1_hat = LogisticRegression()
+    if in_dgp['model'] == 'LR':
+        mu_hat = LogisticRegression()
+        e1_hat = LogisticRegression()
+
+    elif in_dgp['model'] == 'GB':
+        mu_hat = GradientBoostingClassifier()
+        e1_hat = GradientBoostingClassifier()
+
+    else:
+        raise "No model specified for nuisance probs"
 
     mu_hat.fit(XZ[D==1], Y[D==1])
     e1_hat.fit(XZ, D)
@@ -132,7 +149,7 @@ def plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data):
         'p_mu1': p_mu1_hat,
         'p_e1': p_e1_hat,
         'p_mu1_z': p_mu1_z,
-        'p_e1_z': p_e1_z
+        'p_e1_z': p_e1_z,
+        'p_pi': p_pi
     }
     
-
