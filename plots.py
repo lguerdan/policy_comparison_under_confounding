@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import statsmodels.stats.api as sms
-import utils
+import utils, realdata
 
 def bound_plot(metric, regret_df, regret_runs, save=False):
 
@@ -161,7 +161,7 @@ def plot_util_regret_seperation(bdf):
     plt.savefig('figs/seperation_utility.pdf', dpi=500, bbox_inches='tight')
 
 
-def plot_exclusion_sensitivity(bedf):
+def plot_exclusion_sensitivity(bedf, path):
 
     metric_dict = {
         'm_y=1': 'TPR',
@@ -183,25 +183,25 @@ def plot_exclusion_sensitivity(bedf):
         metric_df = metric_df.reset_index(drop=True)
         
         # Create each lineplot on the corresponding subplot axis
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='R')
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='$R_{\delta}$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='Standard')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='Delta (ours)')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_down', color='orange', linestyle='-')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_down', color='blue', linestyle='--')
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='R_oracle', color='black', label='$R^*$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='R_oracle', color='black', label='Oralce')
 
         # Set the titles, labels, etc.
-        axes[i].set_xlabel(r'Exclusion violation ($\beta_1$)', fontsize=16)
-        axes[i].set_title(f'{metric_dict[metric]}', fontsize=16)
-        axes[i].set_ylabel(f'', fontsize=16)
+        axes[i].set_xlabel(r'Exclusion violation ($\beta_1$)', fontsize=18)
+        axes[i].set_title(f'{metric_dict[metric]}', fontsize=20)
+        axes[i].set_ylabel(f'', fontsize=18)
         axes[i].legend().set_visible(False)
         
-    axes[0].set_ylabel(f'Regret', fontsize=16)
+    axes[0].set_ylabel(f'Regret', fontsize=20)
     axes[0].legend(fontsize=16)
 
-    plt.savefig('figs/exclusion_iv.pdf', dpi=500, bbox_inches='tight')
+    plt.savefig(path, dpi=500, bbox_inches='tight')
 
 
-def plot_relevance_sensitivity(brdf):
+def plot_relevance_sensitivity(brdf, path):
 
     metric_dict = {
         'm_y=1': 'TPR',
@@ -224,21 +224,21 @@ def plot_relevance_sensitivity(brdf):
         metric_df = metric_df.reset_index(drop=True)
         
         # Create each lineplot on the corresponding subplot axis
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='$R$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='Standard')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_down', color='orange', linestyle='-')
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='$R_{\delta}$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='Delta (Ours)')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_down', color='blue', linestyle='--')
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='R_oracle', color='black', label='$R^*$')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='R_oracle', color='black', label='Oracle')
 
         # Set the titles, labels, etc.
         axes[i].set_xlabel(r'IV relevance ($\beta_0$)', fontsize=16)
-        axes[i].set_title(f'{metric_dict[metric]}', fontsize=16)
-        axes[i].set_ylabel(f'', fontsize=16)
+        axes[i].set_title(f'{metric_dict[metric]}', fontsize=20)
+        axes[i].set_ylabel(f'', fontsize=18)
         axes[i].legend().set_visible(False)
         
-    axes[0].set_ylabel(f'Regret', fontsize=16)
+    axes[0].set_ylabel(f'Regret', fontsize=20)
     axes[0].legend(fontsize=16)
-    plt.savefig('figs/relevance_iv.pdf', dpi=500, bbox_inches='tight')
+    plt.savefig(path, dpi=500, bbox_inches='tight')
 
 def plot_design_sensitivity(brdf):
 
@@ -286,18 +286,116 @@ def plot_design_sensitivity(brdf):
     plt.savefig('figs/design_sensitivity.pdf', dpi=500, bbox_inches='tight')
 
 
-def plot_cost_ratio_curve(dgp, crdf):
+def plot_cost_ratio_curve(dgp, crdf, fname):
 
     crdf = crdf.sort_values(by='cr')
     crdf = crdf.groupby('cr').mean().reset_index()
 
     plt.axhline(0, color='grey', zorder=1, linestyle='--')
-    plt.fill_between(crdf['cr'], crdf['Rs_down'],crdf['Rs_up'], alpha=.5, label='$R$', color='#708090')
-    plt.fill_between(crdf['cr'], crdf['Rd_down'],crdf['Rd_up'], alpha=.5, label='$R_{\delta}$', color='#F5DEB3')
+    plt.fill_between(crdf['cr'], crdf['Rs_down'],crdf['Rs_up'], alpha=.5, label='Standard interval', color='#708090')
+    plt.fill_between(crdf['cr'], crdf['Rd_down'],crdf['Rd_up'], alpha=.5, label='Delta interval (Ours)', color='#F5DEB3')
     plt.xscale('log',base=10) 
     plt.legend(loc='upper right')
 
-    plt.xlabel('$\delta$', fontsize=14)
-    plt.ylabel('Policy Cost Regret', fontsize=12)
-    plt.savefig('figs/cost_regret.pdf', dpi=500)
+    plt.xlabel('False Positive vs. False Negative Cost Ratio', fontsize=12)
+    plt.ylabel('Cost Regret', fontsize=12)
+    plt.savefig(fname, dpi=500)
 
+
+def plot_msm_sensitivity(msm_dgp, msmdf, path):
+
+    metric_dict = {
+        'm_y=1': 'TPR',
+        'm_y=0': 'FPR',
+        'm_a=0': 'NPV',
+        'm_a=1': 'PPV',
+        'm_u': 'ACCURACY',
+    }
+
+    lam = msm_dgp['lambda']
+    metrics = msmdf['metric'].unique().tolist()
+
+    fig, axes = plt.subplots(1, 5, figsize=(25, 5)) # Adjust the figsize as needed
+
+    for i, metric in enumerate(metrics):
+
+        # Filter the DataFrame for the current metric
+        metric_df = msmdf[msmdf['metric'] == metric]
+
+        # Reset the index to avoid the duplicate labels error
+        metric_df = metric_df.reset_index(drop=True)
+        ymin = metric_df[['Rs_down', 'Rs_up', 'Rd_down', 'Rd_up', 'R_oracle']].min().min()
+        ymax = metric_df[['Rs_down', 'Rs_up', 'Rd_down', 'Rd_up', 'R_oracle']].max().max()
+
+        # Create each lineplot on the corresponding subplot axis
+        sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='Rs_up', color='orange', linestyle='-', label='Standard')
+        sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='Rs_down', color='orange', linestyle='-')
+        sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='Rd_up', color='b', linestyle='--', label='Delta (Ours)')
+        sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='Rd_down', color='b', linestyle='--')
+        sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='R_oracle', color='black', label='Oracle')
+
+        # Set the titles, labels, etc.
+        axes[i].set_xlabel(r'$\Lambda^*$', fontsize=20)
+        axes[i].set_title(f'{metric_dict[metric]}', fontsize=20)
+        axes[i].set_ylabel(f'', fontsize=16)
+
+        ymin, ymax = axes[i].get_ylim()
+        axes[i].fill_between([lam**-1, lam], ymin, ymax, color='grey',
+                             alpha=0.2, zorder=-1, label='Coverage')
+        axes[i].legend().set_visible(False)
+
+    axes[0].set_ylabel(f'Regret', fontsize=20)
+    axes[0].legend(fontsize=16)
+    plt.savefig(path, dpi=500, bbox_inches='tight')
+
+def plot_subgroup_basic(gbdf, metric, fname):
+    
+    mdf = gbdf[gbdf['metric'] == metric].reset_index(drop=True)[::-1]
+    groups = mdf['g'].to_list()
+
+    plt.axvline(0, color='grey', zorder=1, linestyle='--')
+    gdfm = mdf.groupby(['g']).mean()[::-1].reset_index()
+
+    for ix, row in gdfm.iterrows():
+
+        gdf = mdf[mdf['g'] == row['g']]
+        sd = gdf['Rs_down'].tolist()
+        ci_d = sms.DescrStatsW(sd).tconfint_mean()
+        l_d = abs(ci_d[1]-ci_d[0])
+
+        sd = gdf['Rs_up'].tolist()
+        ci_d = sms.DescrStatsW(sd).tconfint_mean()
+        l_u = abs(ci_d[1]-ci_d[0])
+        
+        plt.scatter(row['Rs_down']-(l_d/2), ix,  color='r', s=30)
+        plt.scatter(row['Rs_up']+(l_u/2), ix, color='r', label="R")
+        plt.plot([row['Rs_down']-(l_d/2), row['Rs_up']+(l_u/2)], [ix, ix], color='r', label="Standard interval", linewidth=2)
+
+
+        sd = gdf['Rd_down'].tolist()
+        ci_d = sms.DescrStatsW(sd).tconfint_mean()
+        l_d = abs(ci_d[1]-ci_d[0])
+
+        sd = gdf['Rd_up'].tolist()
+        ci_d = sms.DescrStatsW(sd).tconfint_mean()
+        l_u = abs(ci_d[1]-ci_d[0])
+        
+        plt.plot([row['Rd_down']-(l_d/2), row['Rd_up']+(l_u/2)], [ix+.15, ix+.15], color='b', label="Delta interval (Ours)", linewidth=2)
+        plt.scatter(row['Rd_down']-(l_d/2), ix+.15,  color='b', s=30)
+        plt.scatter(row['Rd_up']+(l_u/2), ix+.15, color='b', label="R")
+
+
+    keys = [i for i in range(gdfm.shape[0])]
+    vals = realdata.get_group_descs(gdfm, sr_info=True)
+    plt.yticks(keys, vals, fontsize=12)
+
+    plt.xlabel(f'{utils.metric_dict[metric]} Regret', fontsize=12)
+
+    # Create a custom legend
+    custom_legend = [
+        plt.Line2D([0], [0], color='b', lw=2, label='Delta interval (Ours)', linestyle='-'),
+        plt.Line2D([0], [0], color='r', lw=2, label='Standard interval', linestyle='-'),
+    ]
+
+    lgd = plt.legend(handles=custom_legend,  fontsize=10, loc='lower left')
+    plt.savefig(fname, dpi=500, bbox_inches='tight')

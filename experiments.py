@@ -8,7 +8,6 @@ import dgp as datagen
 
 def estimation_coverage_experiment(msm_dgp, Ns, Nsims=30):
 
-    Nsims = 30
     superset = datagen.generate_data(msm_dgp)
     coverage_results = []
 
@@ -17,16 +16,22 @@ def estimation_coverage_experiment(msm_dgp, Ns, Nsims=30):
         for sim in range(Nsims):
             data = utils.sample_arrays_common_indices(superset.copy(), n)
 
+            dr_results = estimation.estimate_bounds(msm_dgp, data, id_method='MSM', est_method='dr', K=5)
+            dr_results['N'] = n
+            dr_results['S'] = sim
+            dr_results['method'] = 'dr'
+            coverage_results.append(dr_results)
+
             plugin_results = estimation.estimate_bounds(msm_dgp, data, id_method='MSM', est_method='plugin', K=5)
             plugin_results['N'] = n
             plugin_results['S'] = sim
-            plugin_results['method'] = 'oracle'
+            plugin_results['method'] = 'plugin'
             coverage_results.append(plugin_results)
 
             oracle_results = estimation.estimate_bounds(msm_dgp, data, id_method='MSM', est_method='oracle')
             oracle_results['N'] = n
             oracle_results['S'] = sim
-            oracle_results['method'] = 'plugin'
+            oracle_results['method'] = 'oracle'
             coverage_results.append(oracle_results)
             
     return pd.concat(coverage_results)
@@ -40,9 +45,13 @@ def get_est_exp_metadata(coveragedf, Ns):
         'Rd_up_oracle': [],
         'Rd_up_pl_mean': [],
         'Rd_up_pl_ci': [],
+        'Rd_up_dr_mean': [],
+        'Rd_up_dr_ci': [],
         'Rd_down_oracle': [],
         'Rd_down_pl_mean': [],
         'Rd_down_pl_ci': [],
+        'Rd_down_dr_mean': [],
+        'Rd_down_dr_ci': [],
         'N': [],
         'metric': [],
     }
@@ -52,22 +61,30 @@ def get_est_exp_metadata(coveragedf, Ns):
 
             oracle = coveragedf[(coveragedf['metric'] == metric) & (coveragedf['N'] == n) & (coveragedf['method'] == 'oracle')]
             plugin = coveragedf[(coveragedf['metric'] == metric) & (coveragedf['N'] == n) & (coveragedf['method'] == 'plugin')]
+            dr = coveragedf[(coveragedf['metric'] == metric) & (coveragedf['N'] == n) & (coveragedf['method'] == 'dr')]
 
             plvals_up = plugin['Rd_up'].tolist()
-            ci_up = sms.DescrStatsW(plvals_up).tconfint_mean()
-            plvals_down = plugin['Rd_down'].tolist()
-            ci_down = sms.DescrStatsW(plvals_down).tconfint_mean()
-            
+            pl_ci_up = sms.DescrStatsW(plvals_up).tconfint_mean()
+            pl_plvals_down = plugin['Rd_down'].tolist()
+            pl_ci_down = sms.DescrStatsW(pl_plvals_down).tconfint_mean()
+
+            drvals_up = dr['Rd_up'].tolist()
+            dr_ci_up = sms.DescrStatsW(drvals_up).tconfint_mean()
+            dr_plvals_down = dr['Rd_down'].tolist()
+            dr_ci_down = sms.DescrStatsW(dr_plvals_down).tconfint_mean()
+
             N_results['R_oracle'].append(oracle['R_oracle'].mean())
-            
             N_results['Rd_up_oracle'].append(oracle['Rd_up'].mean())
             N_results['Rd_up_pl_mean'].append(plugin['Rd_up'].mean())
-            N_results['Rd_up_pl_ci'].append(ci_up[1]-ci_up[0])
-            
+            N_results['Rd_up_dr_mean'].append(dr['Rd_up'].mean())
+            N_results['Rd_up_pl_ci'].append(pl_ci_up[1]-pl_ci_up[0])
+            N_results['Rd_up_dr_ci'].append(dr_ci_up[1]-dr_ci_up[0])
+
             N_results['Rd_down_oracle'].append(oracle['Rd_down'].mean())
             N_results['Rd_down_pl_mean'].append(plugin['Rd_down'].mean())
-            N_results['Rd_down_pl_ci'].append(ci_down[1]-ci_down[0])
-            
+            N_results['Rd_down_dr_mean'].append(dr['Rd_down'].mean())
+            N_results['Rd_down_pl_ci'].append(pl_ci_down[1]-pl_ci_down[0])
+            N_results['Rd_down_dr_ci'].append(dr_ci_down[1]-dr_ci_down[0])
             N_results['N'].append(n)
             N_results['metric'].append(metric)
             
@@ -140,3 +157,18 @@ def cost_ratio_sweep_exp(dgp, data, lam):
         regret_runs.append(result)
         
     return pd.concat(regret_runs)
+
+
+def msm_sensitivity_experiment(msm_dgp, lambda_star, n_sims=10):
+
+    msm_bounds = []
+
+    for ls in lambda_star:
+        msm_dgp['lambda_star'] = ls
+        for sim in range(n_sims):
+            data = datagen.generate_data(msm_dgp)
+            bounds = estimation.estimate_bounds(msm_dgp, data, id_method='MSM', est_method='plugin', K=5)
+            bounds['ls'] = ls
+            msm_bounds.append(bounds)
+
+    return pd.concat(msm_bounds)

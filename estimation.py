@@ -15,10 +15,10 @@ def estimate_bounds(dgp, data, id_method, est_method, u=False, K=5):
     
     if est_method == 'oracle':        
         probs = oracle_nuisance_probs(dgp, data)
-        Vpf_down, Vpf_up = vset.get_vset(dgp, data, probs, id_method)
+        Vpf_down, Vpf_up = vset.get_vset(dgp, data, probs, id_method, est_method)
         bdf = bounds.get_bounds(data, Vpf_down, Vpf_up, u, verbose=False)
 
-    if est_method == 'plugin':
+    if est_method == 'plugin' or est_method == 'dr':
         bdf = sample_split_crossfit(dgp, data, id_method, est_method, K)
         
     bdf['id_method'] = id_method
@@ -42,7 +42,7 @@ def sample_split_crossfit(dgp, data, id_method, est_method, K, u=False):
 
         # Learn models, then run inference on data from fold k
         in_probs = plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data)
-        Vpf_down, Vpf_up = vset.get_vset(in_dgp, in_data, in_probs, id_method)
+        Vpf_down, Vpf_up = vset.get_vset(in_dgp, in_data, in_probs, id_method, est_method)
         fold_bdfs.append(bounds.get_bounds(data, Vpf_down, Vpf_up, u, verbose=False)) 
 
     return utils.average_numeric_dataframes(fold_bdfs)
@@ -90,7 +90,8 @@ def plugin_nuisance_probs(in_dgp, out_dgp, in_data, out_data):
 
         # We know oracle probabilities of the new policy
         t_coeffs = in_dgp['t_coeffs'].copy()
-        p_pi = dgp_funcs.pi(in_dgp, t_coeffs, XU)
+        p_pi = dgp_funcs.pi(in_dgp, t_coeffs, in_data['XU'])
+
 
     else: 
         synthetic=False
