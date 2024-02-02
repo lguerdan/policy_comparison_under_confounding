@@ -135,29 +135,28 @@ def design_sensitivity_exp(dgp, data, lambdas, n_sims=10):
     return pd.concat(lambda_bounds)
 
 
-def cost_ratio_sweep_exp(dgp, data, lam):
+def cost_ratio_sweep_exp(dgp, data, lam, n_sims=5):
     
     dgp['lambda'] = lam
     regret_runs = []
 
-    print(dgp)
+    for n in range(n_sims):
 
-    for fn_cost in range(1,25):
-        u = np.array([[0,-fn_cost], [-1, 0]])
-        result = estimation.sample_split_crossfit(dgp, data, id_method='MSM', est_method='plugin', K=5, u=u)
-        result['cr'] = 1/fn_cost
-        result['lambda'] = dgp['lambda']
-        regret_runs.append(result)
+      for fn_cost in range(1,25):
+          u = np.array([[0,-fn_cost], [-1, 0]])
+          result = estimation.sample_split_crossfit(dgp, data, id_method='MSM', est_method='plugin', K=5, u=u)
+          result['cr'] = 1/fn_cost
+          result['lambda'] = dgp['lambda']
+          regret_runs.append(result)
 
-    for fp_cost in range(1,25):
-        u = np.array([[0,-1], [-fp_cost, 0]])
-        result = estimation.sample_split_crossfit(dgp, data, id_method='MSM', est_method='plugin', K=5, u=u)
-        result['cr'] = fp_cost
-        result['lambda'] = dgp['lambda']
-        regret_runs.append(result)
-        
+      for fp_cost in range(1,25):
+          u = np.array([[0,-1], [-fp_cost, 0]])
+          result = estimation.sample_split_crossfit(dgp, data, id_method='MSM', est_method='plugin', K=5, u=u)
+          result['cr'] = fp_cost
+          result['lambda'] = dgp['lambda']
+          regret_runs.append(result)
+          
     return pd.concat(regret_runs)
-
 
 def msm_sensitivity_experiment(msm_dgp, lambda_star, n_sims=10):
 

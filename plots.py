@@ -292,8 +292,8 @@ def plot_cost_ratio_curve(dgp, crdf, fname):
     crdf = crdf.groupby('cr').mean().reset_index()
 
     plt.axhline(0, color='grey', zorder=1, linestyle='--')
-    plt.fill_between(crdf['cr'], crdf['Rs_down'],crdf['Rs_up'], alpha=.5, label='Standard interval', color='#708090')
-    plt.fill_between(crdf['cr'], crdf['Rd_down'],crdf['Rd_up'], alpha=.5, label='Delta interval (Ours)', color='#F5DEB3')
+    plt.fill_between(crdf['cr'], crdf['Rs_down'],crdf['Rs_up'], alpha=.5, label='Baseline interval', color='#a8a8a8')
+    plt.fill_between(crdf['cr'], crdf['Rd_down'],crdf['Rd_up'], alpha=.5, label='Delta interval (ours)', color='#1E90FF')
     plt.xscale('log',base=10) 
     plt.legend(loc='upper right')
 
@@ -350,11 +350,11 @@ def plot_msm_sensitivity(msm_dgp, msmdf, path):
 
 def plot_subgroup_basic(gbdf, metric, fname):
     
-    mdf = gbdf[gbdf['metric'] == metric].reset_index(drop=True)[::-1]
+    mdf = gbdf[gbdf['metric'] == metric].reset_index(drop=True)
     groups = mdf['g'].to_list()
 
     plt.axvline(0, color='grey', zorder=1, linestyle='--')
-    gdfm = mdf.groupby(['g']).mean()[::-1].reset_index()
+    gdfm = mdf.groupby(['g']).mean().reset_index()
 
     for ix, row in gdfm.iterrows():
 
@@ -367,10 +367,9 @@ def plot_subgroup_basic(gbdf, metric, fname):
         ci_d = sms.DescrStatsW(sd).tconfint_mean()
         l_u = abs(ci_d[1]-ci_d[0])
         
-        plt.scatter(row['Rs_down']-(l_d/2), ix,  color='r', s=30)
-        plt.scatter(row['Rs_up']+(l_u/2), ix, color='r', label="R")
-        plt.plot([row['Rs_down']-(l_d/2), row['Rs_up']+(l_u/2)], [ix, ix], color='r', label="Standard interval", linewidth=2)
-
+        plt.scatter(row['Rs_down'], ix,  color='r', s=30)
+        plt.scatter(row['Rs_up'], ix, color='r', label="R")
+        plt.plot([row['Rs_down'], row['Rs_up']], [ix, ix], color='r', label="Baseline interval", linewidth=2)
 
         sd = gdf['Rd_down'].tolist()
         ci_d = sms.DescrStatsW(sd).tconfint_mean()
@@ -380,9 +379,9 @@ def plot_subgroup_basic(gbdf, metric, fname):
         ci_d = sms.DescrStatsW(sd).tconfint_mean()
         l_u = abs(ci_d[1]-ci_d[0])
         
-        plt.plot([row['Rd_down']-(l_d/2), row['Rd_up']+(l_u/2)], [ix+.15, ix+.15], color='b', label="Delta interval (Ours)", linewidth=2)
-        plt.scatter(row['Rd_down']-(l_d/2), ix+.15,  color='b', s=30)
-        plt.scatter(row['Rd_up']+(l_u/2), ix+.15, color='b', label="R")
+        plt.plot([row['Rd_down'], row['Rd_up']], [ix+.15, ix+.15], color='b', label="Delta interval (ours)", linewidth=2)
+        plt.scatter(row['Rd_down'], ix+.15,  color='b', s=30)
+        plt.scatter(row['Rd_up'], ix+.15, color='b', label="R")
 
 
     keys = [i for i in range(gdfm.shape[0])]
@@ -393,8 +392,8 @@ def plot_subgroup_basic(gbdf, metric, fname):
 
     # Create a custom legend
     custom_legend = [
-        plt.Line2D([0], [0], color='b', lw=2, label='Delta interval (Ours)', linestyle='-'),
-        plt.Line2D([0], [0], color='r', lw=2, label='Standard interval', linestyle='-'),
+        plt.Line2D([0], [0], color='b', lw=2, label='Delta interval (ours)', linestyle='-'),
+        plt.Line2D([0], [0], color='r', lw=2, label='Baseline interval', linestyle='-'),
     ]
 
     lgd = plt.legend(handles=custom_legend,  fontsize=10, loc='lower left')
