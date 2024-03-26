@@ -32,10 +32,11 @@ def compute_msm_bounds(dgp, data, nuisance_probs, est_method):
         v100_down = ((1-T) * mu_down * p_e0).mean()
 
     elif est_method == 'dr':
-        v110_up = dgp['lambda'] * compute_dr_vstatistic(D, T, Y, p_e0, p_pi, p_mu1, t=1)
-        v100_up = dgp['lambda'] * compute_dr_vstatistic(D, T, Y, p_e0, p_pi, p_mu1, t=0)
-        v110_down = (1/dgp['lambda']) * compute_dr_vstatistic(D, T, Y, p_e0, p_pi, p_mu1, t=1)
-        v100_down = (1/dgp['lambda']) * compute_dr_vstatistic(D, T, Y, p_e0, p_pi, p_mu1, t=0)
+        lam = dgp['lambda']
+        v110_up = compute_dr_vstatistic(1-D, T, Y, p_e0, p_pi, mu_up, t=1, lam=lam)
+        v100_up = compute_dr_vstatistic(1-D, T, Y, p_e0, p_pi, mu_up, t=0, lam=lam)
+        v110_down = compute_dr_vstatistic(1-D, T, Y, p_e0, p_pi, mu_down, t=1, lam=1/lam)
+        v100_down = compute_dr_vstatistic(1-D, T, Y, p_e0, p_pi, mu_down, t=0, lam=1/lam)
         
     Vpf_down, Vpf_up = np.zeros((2,2)), np.zeros((2,2))
     
@@ -47,17 +48,19 @@ def compute_msm_bounds(dgp, data, nuisance_probs, est_method):
     return Vpf_down, Vpf_up
 
 
-def compute_dr_vstatistic(D, T, Y, e, p_pi, mu, t):
+def compute_dr_vstatistic(D, T, Y, e, p_pi, mu, t, lam):
     
     # Our target is conditional on D=0
     e = 1-e
     
     # Estimate our target conditional on T=t
     if t==0:
+        p_pi = 1-p_pi
         T = 1-T
-        p_pi=1-p_pi
+
+    print(p_pi)
     
-    return (D*Y*p_pi + (T-p_pi)*e*mu).mean()
+    return (lam*D*Y*p_pi + (T-p_pi)*e*mu).mean()
 
 
 def compute_na_bounds(dgp, data, nuisance_probs):

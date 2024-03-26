@@ -183,7 +183,7 @@ def plot_exclusion_sensitivity(bedf, path):
         metric_df = metric_df.reset_index(drop=True)
         
         # Create each lineplot on the corresponding subplot axis
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='Standard')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='Baseline')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='Delta (ours)')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_down', color='orange', linestyle='-')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_down', color='blue', linestyle='--')
@@ -224,9 +224,9 @@ def plot_relevance_sensitivity(brdf, path):
         metric_df = metric_df.reset_index(drop=True)
         
         # Create each lineplot on the corresponding subplot axis
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='Standard')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_up', color='orange', linestyle='-', label='Baseline')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rs_down', color='orange', linestyle='-')
-        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='Delta (Ours)')
+        sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_up', color='blue', linestyle='--', label='Delta (ours)')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='Rd_down', color='blue', linestyle='--')
         sns.lineplot(ax=axes[i], data=metric_df, x='beta_zy', y='R_oracle', color='black', label='Oracle')
 
@@ -240,11 +240,14 @@ def plot_relevance_sensitivity(brdf, path):
     axes[0].legend(fontsize=16)
     plt.savefig(path, dpi=500, bbox_inches='tight')
 
-def plot_design_sensitivity(brdf):
+def plot_design_sensitivity(brdf, path):
 
     metric_dict = {
         'm_y=1': 'TPR',
-        'm_y=0': 'FPR'
+        'm_y=0': 'FPR',
+        'm_a=0': 'NPV',
+        'm_a=1': 'PPV',
+        'm_u': 'ACCURACY',
     }
     nplots = len(metric_dict.keys())
 
@@ -264,26 +267,25 @@ def plot_design_sensitivity(brdf):
         TS_lambda_star = mdf[mdf['Rs_includes_zero'] == 1]['lambda'].min()
         OS_lambda_star = mdf[mdf['Rd_includes_zero'] == 1]['lambda'].min()
 
-        axes[i].fill_between(mdf['lambda'], mdf['Rs_down'], mdf['Rs_up'], label='$R$', color='#708090', alpha=.5, )
-        axes[i].fill_between(mdf['lambda'], mdf['Rd_down'], mdf['Rd_up'], label='$R_{\delta}$', color='#F5DEB3', alpha=.5,)
+        axes[i].fill_between(mdf['lambda'], mdf['Rs_down'], mdf['Rs_up'], label='Baseline interval', color='#a8a8a8', alpha=.5, )
+        axes[i].fill_between(mdf['lambda'], mdf['Rd_down'], mdf['Rd_up'], label='Delta interval (ours)', color='#1E90FF', alpha=.5,)
 
         regret_intercept = mdf['Rs_down'].tolist()[0]
-        axes[i].axvline(TS_lambda_star, color='#708090', zorder=1, linestyle='--')
-        axes[i].axvline(OS_lambda_star, color='#708090', zorder=1, linestyle='--')
+        if 'y' in metric:
+            axes[i].axvline(TS_lambda_star, color='#708090', zorder=1, linestyle='--')
+            axes[i].axvline(OS_lambda_star, color='#708090', zorder=1, linestyle='--')
+            mval = mdf[['Rs_down', 'Rd_down']].min().min()
+            axes[i].text(TS_lambda_star+.05, mval, '$\Lambda^{0}_{R}$', fontsize=18, color='black')
+            axes[i].text(OS_lambda_star-.05, mval-.005, '$\Lambda^{0}_{R_\delta}$', fontsize=18, color='black')
 
         axes[i].axhline(0, color='grey', zorder=1, linestyle='--')
-
-        mval = mdf[['Rs_down', 'Rd_down']].min().min()
-        axes[i].text(TS_lambda_star+.05, mval, '$\Lambda^{0}_{R}$', fontsize=18, color='black')
-        axes[i].text(OS_lambda_star+.05, mval-.005, '$\Lambda^{0}_{R_\delta}$', fontsize=18, color='black')
-
         axes[i].set_title(f'{utils.metric_dict[metric]}', fontsize=16)
         axes[i].set_xlabel('$\Lambda$', fontsize=16)
 
     axes[-1].legend(loc='upper right', fontsize=16)    
     axes[0].set_ylabel('Regret', fontsize=16)
 
-    plt.savefig('figs/design_sensitivity.pdf', dpi=500, bbox_inches='tight')
+    plt.savefig(path, dpi=500, bbox_inches='tight')
 
 
 def plot_cost_ratio_curve(dgp, crdf, fname):
@@ -328,9 +330,9 @@ def plot_msm_sensitivity(msm_dgp, msmdf, path):
         ymax = metric_df[['Rs_down', 'Rs_up', 'Rd_down', 'Rd_up', 'R_oracle']].max().max()
 
         # Create each lineplot on the corresponding subplot axis
-        sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='Rs_up', color='orange', linestyle='-', label='Standard')
+        sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='Rs_up', color='orange', linestyle='-', label='Baseline')
         sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='Rs_down', color='orange', linestyle='-')
-        sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='Rd_up', color='b', linestyle='--', label='Delta (Ours)')
+        sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='Rd_up', color='b', linestyle='--', label='Delta (ours)')
         sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='Rd_down', color='b', linestyle='--')
         sns.lineplot(ax=axes[i], data=metric_df, x='ls', y='R_oracle', color='black', label='Oracle')
 
@@ -350,11 +352,11 @@ def plot_msm_sensitivity(msm_dgp, msmdf, path):
 
 def plot_subgroup_basic(gbdf, metric, fname):
     
-    mdf = gbdf[gbdf['metric'] == metric].reset_index(drop=True)
+    mdf = gbdf[gbdf['metric'] == metric].reset_index(drop=True)[::-1]
     groups = mdf['g'].to_list()
 
     plt.axvline(0, color='grey', zorder=1, linestyle='--')
-    gdfm = mdf.groupby(['g']).mean().reset_index()
+    gdfm = mdf.groupby(['g']).mean().reset_index()[::-1].reset_index()
 
     for ix, row in gdfm.iterrows():
 

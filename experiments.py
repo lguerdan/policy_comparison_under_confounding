@@ -45,13 +45,15 @@ def get_est_exp_metadata(coveragedf, Ns):
         'Rd_up_oracle': [],
         'Rd_up_pl_mean': [],
         'Rd_up_pl_ci': [],
-        'Rd_up_dr_mean': [],
-        'Rd_up_dr_ci': [],
         'Rd_down_oracle': [],
         'Rd_down_pl_mean': [],
         'Rd_down_pl_ci': [],
-        'Rd_down_dr_mean': [],
-        'Rd_down_dr_ci': [],
+        'Rs_up_oracle': [],
+        'Rs_up_pl_mean': [],
+        'Rs_up_pl_ci': [],
+        'Rs_down_oracle': [],
+        'Rs_down_pl_mean': [],
+        'Rs_down_pl_ci': [],
         'N': [],
         'metric': [],
     }
@@ -61,32 +63,36 @@ def get_est_exp_metadata(coveragedf, Ns):
 
             oracle = coveragedf[(coveragedf['metric'] == metric) & (coveragedf['N'] == n) & (coveragedf['method'] == 'oracle')]
             plugin = coveragedf[(coveragedf['metric'] == metric) & (coveragedf['N'] == n) & (coveragedf['method'] == 'plugin')]
-            dr = coveragedf[(coveragedf['metric'] == metric) & (coveragedf['N'] == n) & (coveragedf['method'] == 'dr')]
+
+            N_results['R_oracle'].append(oracle['R_oracle'].mean())
+            N_results['metric'].append(metric)
+            N_results['N'].append(n)
+
+            plvals_up = plugin['Rs_up'].tolist()
+            pl_ci_up = sms.DescrStatsW(plvals_up).tconfint_mean()
+            pl_plvals_down = plugin['Rs_down'].tolist()
+            pl_ci_down = sms.DescrStatsW(pl_plvals_down).tconfint_mean()
+
+            N_results['Rs_up_oracle'].append(oracle['Rs_up'].mean())
+            N_results['Rs_up_pl_mean'].append(plugin['Rs_up'].mean())
+            N_results['Rs_up_pl_ci'].append(pl_ci_up[1]-pl_ci_up[0])
+
+            N_results['Rs_down_oracle'].append(oracle['Rs_down'].mean())
+            N_results['Rs_down_pl_mean'].append(plugin['Rs_down'].mean())
+            N_results['Rs_down_pl_ci'].append(pl_ci_down[1]-pl_ci_down[0])
 
             plvals_up = plugin['Rd_up'].tolist()
             pl_ci_up = sms.DescrStatsW(plvals_up).tconfint_mean()
             pl_plvals_down = plugin['Rd_down'].tolist()
             pl_ci_down = sms.DescrStatsW(pl_plvals_down).tconfint_mean()
 
-            drvals_up = dr['Rd_up'].tolist()
-            dr_ci_up = sms.DescrStatsW(drvals_up).tconfint_mean()
-            dr_plvals_down = dr['Rd_down'].tolist()
-            dr_ci_down = sms.DescrStatsW(dr_plvals_down).tconfint_mean()
-
-            N_results['R_oracle'].append(oracle['R_oracle'].mean())
             N_results['Rd_up_oracle'].append(oracle['Rd_up'].mean())
             N_results['Rd_up_pl_mean'].append(plugin['Rd_up'].mean())
-            N_results['Rd_up_dr_mean'].append(dr['Rd_up'].mean())
             N_results['Rd_up_pl_ci'].append(pl_ci_up[1]-pl_ci_up[0])
-            N_results['Rd_up_dr_ci'].append(dr_ci_up[1]-dr_ci_up[0])
 
             N_results['Rd_down_oracle'].append(oracle['Rd_down'].mean())
             N_results['Rd_down_pl_mean'].append(plugin['Rd_down'].mean())
-            N_results['Rd_down_dr_mean'].append(dr['Rd_down'].mean())
             N_results['Rd_down_pl_ci'].append(pl_ci_down[1]-pl_ci_down[0])
-            N_results['Rd_down_dr_ci'].append(dr_ci_down[1]-dr_ci_down[0])
-            N_results['N'].append(n)
-            N_results['metric'].append(metric)
             
     return pd.DataFrame(N_results)
 

@@ -57,8 +57,7 @@ def get_group_descs(gdfm, sr_info):
 
     for g, sr, size in zip(gdfm['g'].to_list(), gdfm['selection_rate'].to_list(), gdfm['size'].to_list()):
 
-        base = ' '.join(g.split('_')[1:]).capitalize() + f' \n($\psi_0$ = {sr:.2})    ' 
-
+        base = ' '.join(g.split('_')[1:]).capitalize()
         group_descs.append(base)
 
     return group_descs
